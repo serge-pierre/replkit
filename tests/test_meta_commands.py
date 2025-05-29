@@ -2,6 +2,7 @@ import tempfile
 import readline
 from replkit.generic_repl import GenericREPL
 
+
 class TraceInterpreter:
     def __init__(self):
         self.executed = []
@@ -12,13 +13,16 @@ class TraceInterpreter:
     def get_keywords(self):
         return {"run", "stop"}
 
+
 def test_history_and_exit(monkeypatch, capsys):
     # 1. Prepare REPL input lines
-    lines = iter([
-        "run",          # will be interpreted
-        "history",      # triggers REPL history print
-        "exit"          # ends the REPL
-    ])
+    lines = iter(
+        [
+            "run",  # will be interpreted
+            "history",  # triggers REPL history print
+            "exit",  # ends the REPL
+        ]
+    )
 
     monkeypatch.setattr("builtins.input", lambda _: next(lines))
 
@@ -33,7 +37,7 @@ def test_history_and_exit(monkeypatch, capsys):
             interpreter=interpreter,
             history_file=temp_file.name,
             prompt="",
-            hello_sentence=""
+            hello_sentence="",
         )
         repl.loop()
 
@@ -42,11 +46,9 @@ def test_history_and_exit(monkeypatch, capsys):
     assert "1: run" in captured.out
     assert interpreter.executed == ["run"]
 
+
 def test_command_recall(monkeypatch, capsys):
-    lines = iter([
-        "!1",     # recall "run"
-        "exit"
-    ])
+    lines = iter(["!1", "exit"])  # recall "run"
 
     monkeypatch.setattr("builtins.input", lambda _: next(lines))
 
@@ -56,7 +58,9 @@ def test_command_recall(monkeypatch, capsys):
 
     # Adapter readline mock to reflect that
     monkeypatch.setattr(readline, "get_current_history_length", lambda: 1)
-    monkeypatch.setattr(readline, "get_history_item", lambda i: "run" if i == 1 else None)
+    monkeypatch.setattr(
+        readline, "get_history_item", lambda i: "run" if i == 1 else None
+    )
 
     interpreter = TraceInterpreter()
 
@@ -65,9 +69,8 @@ def test_command_recall(monkeypatch, capsys):
             interpreter=interpreter,
             history_file=temp_file.name,
             prompt="",
-            hello_sentence=""
+            hello_sentence="",
         )
         repl.loop()
 
     assert interpreter.executed == ["run"]
-

@@ -1,6 +1,7 @@
 import readline
 from replkit.generic_repl import REPLCompleter
 
+
 # --- Dummy interpreter ---
 class DummyInterpreter:
     def __init__(self):
@@ -8,6 +9,7 @@ class DummyInterpreter:
 
     def get_keywords(self):
         return self.words
+
 
 # --- Utility function for completion ---
 def collect_completions(completer, text):
@@ -21,6 +23,7 @@ def collect_completions(completer, text):
         state += 1
     return results
 
+
 # --- Test 1: interpreter keywords only ---
 def test_completer_interpreter_keywords():
     interpreter = DummyInterpreter()
@@ -29,6 +32,7 @@ def test_completer_interpreter_keywords():
     assert "drop" in results
     assert "duplicate" in results
     assert "add" not in results
+
 
 # --- Test 2: meta-commands only ---
 def test_completer_meta_commands():
@@ -42,6 +46,7 @@ def test_completer_meta_commands():
     assert "help" in results
     assert "history" in results
     assert "exit" not in results
+
 
 # --- Test 3: history words only ---
 def test_completer_history(monkeypatch):
@@ -60,6 +65,7 @@ def test_completer_history(monkeypatch):
     assert "drop" in results
     assert "drop that" not in results  # split words, not full lines
     assert "that" not in results
+
 
 # --- Test 4: combined sources ---
 def test_completer_combined(monkeypatch):

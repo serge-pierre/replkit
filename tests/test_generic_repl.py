@@ -1,6 +1,6 @@
 import tempfile
-import os
 from replkit.generic_repl import GenericREPL
+
 
 class DummyInterpreter:
     def __init__(self):
@@ -12,6 +12,7 @@ class DummyInterpreter:
 
     def get_keywords(self):
         return self.keywords
+
 
 def test_eval_execution(monkeypatch):
     # Simulate input/output with monkeypatch
@@ -27,7 +28,7 @@ def test_eval_execution(monkeypatch):
             interpreter=interpreter,
             history_file=temp_history.name,
             prompt="",
-            hello_sentence=""
+            hello_sentence="",
         )
         repl.loop()
 

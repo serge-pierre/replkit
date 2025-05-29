@@ -12,7 +12,7 @@ test:
 	$(PYTHON) -m pytest
 
 lint:
-	$(PYTHON) -m ruff replkit tests
+	$(PYTHON) -m ruff check replkit tests
 
 format:
 	$(PYTHON) -m black replkit tests

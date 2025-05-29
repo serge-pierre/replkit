@@ -3,6 +3,7 @@ import logging
 import argparse
 from pathlib import Path
 
+
 class REPLCompleter:
     def __init__(self, interpreter, meta_commands=None):
         self.interpreter = interpreter
@@ -30,9 +31,15 @@ class REPLCompleter:
 
 
 class GenericREPL:
-    def __init__(self, interpreter, history_file=".repl_history",
-                 history_length=1000, hello_sentence="Welcome to the REPL!",
-                 prompt=">>> ", logger=None):
+    def __init__(
+        self,
+        interpreter,
+        history_file=".repl_history",
+        history_length=1000,
+        hello_sentence="Welcome to the REPL!",
+        prompt=">>> ",
+        logger=None,
+    ):
         self.interpreter = interpreter
         self.history_file = history_file
         self.history_length = history_length
@@ -81,7 +88,9 @@ class GenericREPL:
                                 continue
                             print(f"# {recalled}")
                             line = recalled
-                            readline.remove_history_item(readline.get_current_history_length() - 1)
+                            readline.remove_history_item(
+                                readline.get_current_history_length() - 1
+                            )
                             readline.add_history(line)
                         except ValueError:
                             print("Use !N to recall a command by its index.")
@@ -108,11 +117,15 @@ class GenericREPL:
 
 def main():
     parser = argparse.ArgumentParser(description="Generic REPL runner")
-    parser.add_argument("--history", default="~/.repl_history", help="Path to history file")
+    parser.add_argument(
+        "--history", default="~/.repl_history", help="Path to history file"
+    )
     parser.add_argument("--prompt", default=">>> ", help="Prompt text")
     parser.add_argument("--hello", default="Welcome to REPL!", help="Welcome message")
     parser.add_argument("--log", default="~/repl.log", help="Log file path")
-    parser.add_argument("--loglevel", default="DEBUG", help="Logging level (DEBUG, INFO, WARNING...)")
+    parser.add_argument(
+        "--loglevel", default="DEBUG", help="Logging level (DEBUG, INFO, WARNING...)"
+    )
 
     args = parser.parse_args()
     args.history = str(Path(args.history).expanduser())
@@ -140,7 +153,7 @@ def main():
         history_file=args.history,
         hello_sentence=args.hello,
         prompt=args.prompt,
-        logger=logger
+        logger=logger,
     )
     repl.loop()
 
