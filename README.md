@@ -2,7 +2,7 @@
 
 `replkit` is a generic REPL engine for building interactive command-line environments with pluggable interpreters.
 
-## 🚀 Features
+## Features
 
 - Persistent command history
 - Command recall using `!N`
@@ -11,7 +11,7 @@
 - Configurable logging
 - Argument parsing via CLI
 
-## 📦 Installation
+## Installation
 
 ```bash
 pip install .
