@@ -1,3 +1,9 @@
+"""
+test_generic_repl.py
+
+Tests for the GenericREPL class using a dummy interpreter. Focuses on command
+execution flow and REPL loop behavior.
+"""
 import tempfile
 from replkit.generic_repl import GenericREPL
 
@@ -15,7 +21,7 @@ class DummyInterpreter:
 
 
 def test_eval_execution(monkeypatch):
-    # Simulate input/output with monkeypatch
+    """Test that the interpreter receives and executes a command line."""
     lines = iter(["foo", "exit"])
 
     monkeypatch.setattr("builtins.input", lambda _: next(lines))
