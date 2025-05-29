@@ -52,7 +52,7 @@ This is suitable for users who only want to use the tool, not modify it.
 # Install replkit with pip (from local source or GitHub)
 pip install .
 # Or from GitHub (public repository)
-pip install git+https://github.com/yourname/replkit.git
+pip install git+https://github.com/serge-pierre/replkit.git
 ```
 
 This will install the `replkit` CLI command without dev tools.
