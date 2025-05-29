@@ -1,0 +1,26 @@
+[project]
+name = "replkit"
+version = "0.1.0"
+description = "A generic REPL engine for pluggable interpreters and meta-commands."
+authors = [
+  { name = "Serge Pierre"}
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+keywords = ["repl", "interpreter", "cli", "framework"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Interpreters",
+  "Environment :: Console"
+]
+
+[project.scripts]
+replkit = "replkit.generic_repl:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
