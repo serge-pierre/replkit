@@ -24,11 +24,13 @@ This is the preferred setup for developers who want to modify and test the proje
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# 2. Upgrade pip and install in editable mode with dev dependencies
+# 2. Upgrade pip and setuptools
 pip install --upgrade pip setuptools
+
+# 3. Install the package in editable mode with development dependencies
 pip install -e .[dev]
 
-# 3. Run tests to validate installation
+# 4. Run tests to validate installation
 pytest
 ```
 
@@ -39,6 +41,8 @@ You can then run the REPL with:
 ```bash
 replkit --prompt "mlang> " --hello "Welcome to MiniLang!"
 ```
+
+**Note:** This project uses the `src/` layout. All source code lives in `src/replkit`, and you must run tests from the project root.
 
 ### Production install
 

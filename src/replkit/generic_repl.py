@@ -1,3 +1,10 @@
+"""
+replkit.generic_repl
+
+Provides a generic REPL engine with pluggable interpreters, command history,
+tab-completion, and meta-command support.
+"""
+
 import readline
 import logging
 import argparse
@@ -5,12 +12,29 @@ from pathlib import Path
 
 
 class REPLCompleter:
+    """Provides tab-completion for REPL commands using interpreter keywords, meta-commands, and history."""
+
     def __init__(self, interpreter, meta_commands=None):
+        """Initializes the REPL completer.
+
+        Args:
+            interpreter: The interpreter instance providing `get_keywords()`.
+            meta_commands: Optional set of built-in REPL commands.
+        """
         self.interpreter = interpreter
         self.meta_commands = meta_commands or {"exit", "quit", "history", "help"}
         self.matches = []
 
     def complete(self, text, state):
+        """Returns completion suggestions for the current input.
+
+        Args:
+            text: The current input fragment.
+            state: The completion index (used by readline).
+
+        Returns:
+            A suggested word or None.
+        """
         if state == 0:
             words = set(self.meta_commands)
 
@@ -31,6 +55,17 @@ class REPLCompleter:
 
 
 class GenericREPL:
+    """A customizable Read-Eval-Print Loop (REPL) for command interpreters.
+
+    Attributes:
+        interpreter: An object with `eval()` method and optional `get_keywords()`.
+        history_file: Path to the history file.
+        history_length: Maximum number of lines to store in history.
+        hello_sentence: Welcome message shown on REPL start.
+        prompt: String shown before each input.
+        logger: Logger instance for diagnostics.
+    """
+
     def __init__(
         self,
         interpreter,
@@ -40,6 +75,16 @@ class GenericREPL:
         prompt=">>> ",
         logger=None,
     ):
+        """Initializes the REPL environment.
+
+        Args:
+            interpreter: The interpreter object.
+            history_file: Path to the history file.
+            history_length: Max lines to store.
+            hello_sentence: Welcome message.
+            prompt: Prompt string.
+            logger: Logger instance (optional).
+        """
         self.interpreter = interpreter
         self.history_file = history_file
         self.history_length = history_length
@@ -49,6 +94,7 @@ class GenericREPL:
         self.logger.debug("REPL initialized with prompt: %s", self.prompt)
 
     def init_history(self):
+        """Initializes the readline history from file."""
         try:
             readline.read_history_file(self.history_file)
             self.logger.info("Loaded history file: %s", self.history_file)
@@ -57,14 +103,17 @@ class GenericREPL:
         readline.set_history_length(self.history_length)
 
     def save_history(self):
+        """Saves the readline history to file."""
         readline.write_history_file(self.history_file)
         self.logger.info("Saved history to: %s", self.history_file)
 
     def print_history(self):
+        """Prints the current command history to stdout."""
         for i in range(1, readline.get_current_history_length() + 1):
             print(f"{i}: {readline.get_history_item(i)}")
 
     def loop(self):
+        """Starts the interactive REPL loop."""
         self.init_history()
         readline.set_completer(REPLCompleter(self.interpreter).complete)
         readline.parse_and_bind("tab: complete")
@@ -116,6 +165,7 @@ class GenericREPL:
 
 
 def main():
+    """Entry point for the command-line REPL."""
     parser = argparse.ArgumentParser(description="Generic REPL runner")
     parser.add_argument(
         "--history", default="~/.repl_history", help="Path to history file"
@@ -139,6 +189,8 @@ def main():
     logger.addHandler(handler)
 
     class DefaultInterpreter:
+        """Simple interpreter used if no interpreter is passed."""
+
         def __init__(self):
             self.words = {"print", "dup", "drop", "swap"}
 
