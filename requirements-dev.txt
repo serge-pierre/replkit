@@ -1,9 +1,0 @@
-# requirements-dev.txt
-
-pytest>=8.0
-pytest-mock>=3.12
-# For linting/formatting
-black>=24.0
-ruff>=0.3.0
-# For type checking
-mypy>=1.8

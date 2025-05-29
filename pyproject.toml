@@ -24,3 +24,11 @@ replkit = "replkit.generic_repl:main"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-mock",
+  "black",
+  "ruff"
+]
