@@ -176,6 +176,9 @@ def main():
     parser.add_argument(
         "--loglevel", default="DEBUG", help="Logging level (DEBUG, INFO, WARNING...)"
     )
+    parser.add_argument("--run", help="Command to execute before entering the REPL")
+    parser.add_argument("--file", help="File containing commands to execute")
+
 
     args = parser.parse_args()
     args.history = str(Path(args.history).expanduser())
@@ -207,8 +210,18 @@ def main():
         prompt=args.prompt,
         logger=logger,
     )
-    repl.loop()
 
+    if args.file:
+        with open(args.file) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    repl.interpreter.eval(line)
+
+    if args.run:
+        repl.interpreter.eval(args.run)
+
+        repl.loop()
 
 if __name__ == "__main__":
     main()

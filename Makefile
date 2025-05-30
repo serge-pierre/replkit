@@ -6,7 +6,7 @@ PIP ?= $(PYTHON) -m pip
 .PHONY: install test lint format clean check
 
 install:
-	$(PIP) install upgrade pip setuptools
+	$(PIP) install --upgrade pip setuptools
 	$(PIP) install -e .[dev]
 
 test:
