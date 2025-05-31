@@ -24,7 +24,12 @@ class REPLCompleter:
         """
         # Default set of .meta-commands
         self.meta_commands = meta_commands or {
-            ".exit", ".quit", ".help", ".history", ".clear", ".reload"
+            ".exit",
+            ".quit",
+            ".help",
+            ".history",
+            ".clear",
+            ".reload",
         }
         self.interpreter = interpreter
         self.matches = []
@@ -68,6 +73,7 @@ class GenericREPL:
         hello_sentence: Welcome message shown on REPL start.
         prompt: String shown before each input.
         logger: Logger instance for diagnostics.
+        init_file: (optional) Path to a file whose contents were executed at startup.
     """
 
     def __init__(
@@ -96,6 +102,7 @@ class GenericREPL:
         self.prompt = prompt
         self.logger = logger or logging.getLogger(__name__)
         self.logger.debug("REPL initialized with prompt: %s", self.prompt)
+        self.init_file = None  # Will hold the path to a file executed before looping
 
     def init_history(self):
         """Initializes the readline history from file."""
@@ -128,60 +135,80 @@ class GenericREPL:
             while True:
                 try:
                     line = input(self.prompt).strip()
-                    self.logger.debug("User input: %s", line)
-                    if not line:
-                        continue
-
-                    if line.startswith("!"):
-                        try:
-                            index = int(line[1:])
-                            recalled = readline.get_history_item(index)
-                            if recalled is None:
-                                print(f"No command at index {index}")
-                                continue
-                            print(f"# {recalled}")
-                            line = recalled
-                            readline.remove_history_item(
-                                readline.get_current_history_length() - 1
-                            )
-                            readline.add_history(line)
-                        except ValueError:
-                            print("Use !N to recall a command by its index.")
-                            continue
-
-                    if line == ".history":
-                        self.print_history()
-                        continue
-
-                    if line in (".exit", ".quit"):
-                        raise EOFError()
-
-                    if line == ".help":
-                        print("REPL meta-commands:")
-                        print("  .exit, .quit     Exit the REPL")
-                        print("  .history         Show command history")
-                        print("  !N               Recall command at position N")
-                        print("  .clear           Clear the screen")
-                        print("  .reload          Reloading not implemented")
-                        continue
-
-                    if line == ".clear":
-                        os.system("clear")  # or 'cls' on Windows
-                        continue
-
-                    if line == ".reload":
-                        print("Reloading not implemented.")
-                        continue
-
-                    # Evaluate through interpreter
-                    self.interpreter.eval(line)
-
                 except KeyboardInterrupt:
-                    print("\nUse Ctrl-D, quit or exit to leave.")
+                    # Handle Ctrl-C gracefully
+                    print("\nUse .exit .quit or Ctrl-D to leave.")
                     continue
                 except EOFError:
+                    # Handle Ctrl-D: exit immediately
                     print("\nBye!")
                     break
+
+                if not line:
+                    continue
+
+                # Meta-command: !N – recall a previous history entry
+                if line.startswith("!"):
+                    try:
+                        index = int(line[1:])
+                        recalled = readline.get_history_item(index)
+                        if recalled is None:
+                            print(f"No command at index {index}")
+                            continue
+                        print(f"# {recalled}")
+                        line = recalled
+                        # Replace the “!N” entry in history with the recalled command
+                        readline.remove_history_item(
+                            readline.get_current_history_length() - 1
+                        )
+                        readline.add_history(line)
+                    except ValueError:
+                        print("Use !N to recall a command by its index.")
+                        continue
+
+                # Meta-commands prefixed with '.'
+                if line == ".history":
+                    self.print_history()
+                    continue
+
+                if line in (".exit", ".quit"):
+                    print("Bye!")
+                    break
+
+                if line == ".help":
+                    print("REPL meta-commands:")
+                    print("  .exit, .quit     Exit the REPL")
+                    print("  .history         Show command history")
+                    print("  !N               Recall command at position N")
+                    print("  .clear           Clear the screen")
+                    print("  .reload          Reload the init file")
+                    print("  .help            Show this help message")
+                    continue
+
+                if line == ".clear":
+                    os.system("clear")  # or 'cls' on Windows
+                    continue
+
+                if line == ".reload":
+                    # Perform actual reload of the init_file if it was set
+                    if self.init_file:
+                        print(f"Reloading {self.init_file}...")
+                        try:
+                            with open(self.init_file) as f:
+                                for cmd in f:
+                                    cmd = cmd.strip()
+                                    if cmd:
+                                        self.interpreter.eval(cmd)
+                        except Exception as e:
+                            print(f"Failed to reload: {e}")
+                    else:
+                        print("No file was originally loaded to reload.")
+                    continue
+
+                # Evaluate any other line through the interpreter
+                self.interpreter.eval(line)
+
+            # End of while True
         finally:
             self.save_history()
 
@@ -220,11 +247,11 @@ def repl(interpreter=None, argv=None):
     parser.add_argument("--run", help="Command to execute before entering the REPL")
     parser.add_argument("--file", help="File containing commands to execute")
 
-
     args = parser.parse_args(argv)
     args.history = str(Path(args.history).expanduser())
     args.log = str(Path(args.log).expanduser())
 
+    # Configure logger
     logger = logging.getLogger("repl_logger")
     logger.setLevel(getattr(logging, args.loglevel.upper(), logging.DEBUG))
 
@@ -244,17 +271,27 @@ def repl(interpreter=None, argv=None):
         logger=logger,
     )
 
-    if args.file:
-        with open(args.file) as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    repl_instance.interpreter.eval(line)
+    # Store init_file so .reload can re-execute it
+    repl_instance.init_file = args.file
 
+    # Pre-execute commands from --file, if provided
+    if args.file:
+        try:
+            with open(args.file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        repl_instance.interpreter.eval(line)
+        except FileNotFoundError:
+            print(f"Init file not found: {args.file}")
+
+    # Pre-execute single command from --run, if provided
     if args.run:
         repl_instance.interpreter.eval(args.run)
 
+    # Launch interactive loop
     repl_instance.loop()
+
 
 if __name__ == "__main__":
     repl()
