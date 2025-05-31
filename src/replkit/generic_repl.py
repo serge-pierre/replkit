@@ -5,6 +5,7 @@ Provides a generic REPL engine with pluggable interpreters, command history,
 tab-completion, and meta-command support.
 """
 
+import os
 import readline
 import logging
 import argparse
@@ -21,8 +22,11 @@ class REPLCompleter:
             interpreter: The interpreter instance providing `get_keywords()`.
             meta_commands: Optional set of built-in REPL commands.
         """
+        # Default set of .meta-commands
+        self.meta_commands = meta_commands or {
+            ".exit", ".quit", ".help", ".history", ".clear", ".reload"
+        }
         self.interpreter = interpreter
-        self.meta_commands = meta_commands or {"exit", "quit", "history", "help"}
         self.matches = []
 
     def complete(self, text, state):
@@ -145,13 +149,31 @@ class GenericREPL:
                             print("Use !N to recall a command by its index.")
                             continue
 
-                    if line == "history":
+                    if line == ".history":
                         self.print_history()
                         continue
 
-                    if line in ("exit", "quit"):
+                    if line in (".exit", ".quit"):
                         raise EOFError()
 
+                    if line == ".help":
+                        print("REPL meta-commands:")
+                        print("  .exit, .quit     Exit the REPL")
+                        print("  .history         Show command history")
+                        print("  !N               Recall command at position N")
+                        print("  .clear           Clear the screen")
+                        print("  .reload          Reloading not implemented")
+                        continue
+
+                    if line == ".clear":
+                        os.system("clear")  # or 'cls' on Windows
+                        continue
+
+                    if line == ".reload":
+                        print("Reloading not implemented.")
+                        continue
+
+                    # Evaluate through interpreter
                     self.interpreter.eval(line)
 
                 except KeyboardInterrupt:
@@ -164,32 +186,13 @@ class GenericREPL:
             self.save_history()
 
 
-def main():
-    """Entry point for the command-line REPL."""
-    parser = argparse.ArgumentParser(description="Generic REPL runner")
-    parser.add_argument(
-        "--history", default="~/.repl_history", help="Path to history file"
-    )
-    parser.add_argument("--prompt", default=">>> ", help="Prompt text")
-    parser.add_argument("--hello", default="Welcome to REPL!", help="Welcome message")
-    parser.add_argument("--log", default="~/repl.log", help="Log file path")
-    parser.add_argument(
-        "--loglevel", default="DEBUG", help="Logging level (DEBUG, INFO, WARNING...)"
-    )
-    parser.add_argument("--run", help="Command to execute before entering the REPL")
-    parser.add_argument("--file", help="File containing commands to execute")
+def repl(interpreter=None, argv=None):
+    """Main REPL entry point.
 
-
-    args = parser.parse_args()
-    args.history = str(Path(args.history).expanduser())
-    args.log = str(Path(args.log).expanduser())
-
-    logger = logging.getLogger("repl_logger")
-    logger.setLevel(getattr(logging, args.loglevel.upper(), logging.DEBUG))
-
-    handler = logging.FileHandler(args.log)
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-    logger.addHandler(handler)
+    Args:
+        interpreter: Interpreter instance implementing .eval() and optionally .get_keywords()
+        argv: Optional list of CLI arguments (e.g., ["--log", "out.log"])
+    """
 
     class DefaultInterpreter:
         """Simple interpreter used if no interpreter is passed."""
@@ -203,11 +206,41 @@ def main():
         def get_keywords(self):
             return self.words
 
-    repl = GenericREPL(
-        interpreter=DefaultInterpreter(),
+    parser = argparse.ArgumentParser(description="Generic REPL runner")
+
+    parser.add_argument(
+        "--history", default="~/repl_history", help="Path to history file"
+    )
+    parser.add_argument("--prompt", default=">>> ", help="Prompt text")
+    parser.add_argument("--hello", default="Welcome to REPL!", help="Welcome message")
+    parser.add_argument("--log", default="~/repl.log", help="Log file path")
+    parser.add_argument(
+        "--loglevel", default="DEBUG", help="Logging level (DEBUG, INFO, WARNING...)"
+    )
+    parser.add_argument("--run", help="Command to execute before entering the REPL")
+    parser.add_argument("--file", help="File containing commands to execute")
+
+
+    args = parser.parse_args(argv)
+    args.history = str(Path(args.history).expanduser())
+    args.log = str(Path(args.log).expanduser())
+
+    logger = logging.getLogger("repl_logger")
+    logger.setLevel(getattr(logging, args.loglevel.upper(), logging.DEBUG))
+
+    handler = logging.FileHandler(args.log)
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logger.addHandler(handler)
+
+    # Use provided interpreter or default fallback
+    if interpreter is None:
+        interpreter = DefaultInterpreter()
+
+    repl_instance = GenericREPL(
+        interpreter=interpreter,
         history_file=args.history,
-        hello_sentence=args.hello,
         prompt=args.prompt,
+        hello_sentence=args.hello,
         logger=logger,
     )
 
@@ -216,12 +249,12 @@ def main():
             for line in f:
                 line = line.strip()
                 if line:
-                    repl.interpreter.eval(line)
+                    repl_instance.interpreter.eval(line)
 
     if args.run:
-        repl.interpreter.eval(args.run)
+        repl_instance.interpreter.eval(args.run)
 
-        repl.loop()
+    repl_instance.loop()
 
 if __name__ == "__main__":
-    main()
+    repl()
