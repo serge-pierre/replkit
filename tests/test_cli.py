@@ -6,9 +6,6 @@ This includes usage help output and simple execution via subprocess.
 """
 
 import subprocess
-import tempfile
-import textwrap
-import os
 
 
 def test_replkit_cli_help():

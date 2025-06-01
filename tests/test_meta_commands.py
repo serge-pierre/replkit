@@ -10,10 +10,8 @@ Unit tests for REPL meta-commands in GenericREPL, including:
 """
 
 import os
-import tempfile
 import readline
 import builtins
-import pytest
 from replkit import GenericREPL
 
 

@@ -7,7 +7,6 @@ meta-commands, command recall, and REPL behavior under interruptions.
 
 import readline
 import builtins
-import pytest
 from replkit import GenericREPL
 
 
