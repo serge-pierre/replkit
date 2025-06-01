@@ -123,6 +123,34 @@ class GenericREPL:
         for i in range(1, readline.get_current_history_length() + 1):
             print(f"{i}: {readline.get_history_item(i)}")
 
+    def load_file(self, path, *, label=None, show_errors=True):
+        """Loads and executes each command from a file.
+
+        Args:
+            path (str): The file path.
+            label (str): Optional label for messages (e.g. "init file", ".reload", etc).
+            show_errors (bool): Whether to print errors from eval.
+        """
+        if not os.path.exists(path):
+            print(f"{label or 'File'} not found: {path}")
+            return
+
+        print(f"Loading {label or path}...")
+
+        try:
+            with open(path) as f:
+                for raw in f:
+                    line = raw.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    try:
+                        self.interpreter.eval(line)
+                    except Exception as e:
+                        if show_errors:
+                            print(f"Error in {label or path}: {e}")
+        except Exception as e:
+            print(f"Failed to read {label or path}: {e}")
+
     def loop(self):
         """Starts the interactive REPL loop."""
         self.init_history()
@@ -190,19 +218,15 @@ class GenericREPL:
                     continue
 
                 if line == ".reload":
-                    # Perform actual reload of the init_file if it was set
                     if self.init_file:
-                        print(f"Reloading {self.init_file}...")
-                        try:
-                            with open(self.init_file) as f:
-                                for cmd in f:
-                                    cmd = cmd.strip()
-                                    if cmd:
-                                        self.interpreter.eval(cmd)
-                        except Exception as e:
-                            print(f"Failed to reload: {e}")
+                        self.load_file(self.init_file, label=".reload")
                     else:
                         print("No file was originally loaded to reload.")
+                    continue
+
+                if line.startswith(".load "):
+                    filepath = line.split(maxsplit=1)[1]
+                    self.load_file(filepath, label=f".load {filepath}")
                     continue
 
                 # Evaluate any other line through the interpreter
@@ -276,14 +300,8 @@ def repl(interpreter=None, argv=None):
 
     # Pre-execute commands from --file, if provided
     if args.file:
-        try:
-            with open(args.file) as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        repl_instance.interpreter.eval(line)
-        except FileNotFoundError:
-            print(f"Init file not found: {args.file}")
+        repl_instance.init_file = args.file
+        repl_instance.load_file(args.file, label="init file", show_errors=False)
 
     # Pre-execute single command from --run, if provided
     if args.run:
