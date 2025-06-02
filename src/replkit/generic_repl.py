@@ -145,6 +145,7 @@ class GenericREPL:
                         continue
                     try:
                         self.interpreter.eval(line)
+                        readline.add_history(line)
                     except Exception as e:
                         if show_errors:
                             print(f"Error in {label or path}: {e}")
@@ -306,6 +307,7 @@ def repl(interpreter=None, argv=None):
     # Pre-execute single command from --run, if provided
     if args.run:
         repl_instance.interpreter.eval(args.run)
+        readline.add_history(args.run)
 
     # Launch interactive loop
     repl_instance.loop()
