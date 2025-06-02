@@ -1,0 +1,4 @@
+# Initialization
+let A = True
+let B = False
+let C = A or B
