@@ -168,7 +168,7 @@ Math> .reload
 ## Example projects
 
 - `math_repl.py` – A math evaluator using Python `eval()`
-- `calc_booelean_repl.py` – (see [docs/interpreter_guide.md](docs/interpreter_guide.md)) A boolean calculator REPL (coming soon)
+- `calc_boolean_repl.py` – (see [docs/interpreter_guide.md](docs/interpreter_guide.md)) A boolean calculator REPL
 - `json_query_repl.py` – Query JSON using a mini DSL
 
 ---
@@ -178,6 +178,7 @@ Math> .reload
 - Add support for multi-line command blocks
 - Optional typed variables or context management
 - Load interpreters from entry-points or plug-ins
+- Management of alias definition
 
 ---
 
