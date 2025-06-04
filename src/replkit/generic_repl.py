@@ -2,13 +2,14 @@
 replkit.generic_repl
 
 Provides a generic REPL engine with pluggable interpreters, command history,
-tab-completion, and meta-command support.
+tab-completion, alias support and meta-command support.
 """
 
 import os
 import readline
 import logging
 import argparse
+import re
 from pathlib import Path
 
 
@@ -30,8 +31,12 @@ class REPLCompleter:
             ".history",
             ".clear",
             ".reload",
+            ".load",
+            ".alias",
+            ".unalias",
         }
         self.interpreter = interpreter
+        self.repl = None  # To be set by REPL instance if needed
         self.matches = []
 
     def complete(self, text, state):
@@ -42,7 +47,7 @@ class REPLCompleter:
             state: The completion index (used by readline).
 
         Returns:
-            A suggested word or None.
+            A suggested word (str) for autocompletion or None if no match.
         """
         if state == 0:
             words = set(self.meta_commands)
@@ -52,6 +57,9 @@ class REPLCompleter:
                     words.update(self.interpreter.get_keywords())
                 except Exception:
                     pass
+
+            if self.repl and hasattr(self.repl, "aliases"):
+                words.update(self.repl.aliases.keys())
 
             for i in range(1, readline.get_current_history_length() + 1):
                 entry = readline.get_history_item(i)
@@ -81,6 +89,7 @@ class GenericREPL:
         interpreter,
         history_file=".repl_history",
         history_length=1000,
+        aliases_file=".repl_aliases",
         hello_sentence="Welcome to the REPL!",
         prompt=">>> ",
         logger=None,
@@ -103,6 +112,96 @@ class GenericREPL:
         self.logger = logger or logging.getLogger(__name__)
         self.logger.debug("REPL initialized with prompt: %s", self.prompt)
         self.init_file = None  # Will hold the path to a file executed before looping
+        self.aliases_file = aliases_file
+        self.aliases = {}
+
+    def add_history_once(self, line: str):
+        """Adds a line to readline history if it's not already the last entry."""
+        hist_len = readline.get_current_history_length()
+        if hist_len == 0 or readline.get_history_item(hist_len) != line:
+            readline.add_history(line)
+
+    def handle_alias_command(self, line: str) -> bool:
+        """Handles alias creation, listing, and removal.
+
+        Args:
+            line: A command line starting with .alias or .unalias.
+
+        Returns:
+            True if the line was an alias command, False otherwise.
+        """
+        if line.startswith(".alias"):
+            parts = line[len(".alias") :].strip()
+            if not parts:
+                if not self.aliases:
+                    print("No aliases defined.")
+                else:
+                    for name, expr in sorted(self.aliases.items()):
+                        print(f"{name} = {expr}")
+            else:
+                if "=" not in parts:
+                    print("Usage: .alias name=expression")
+                    return True
+                name, expr = map(str.strip, parts.split("=", 1))
+                if not name.startswith("@") or not name[1:].isidentifier():
+                    print(
+                        f"Invalid alias name: '{name}' (must start with '@' and be a valid identifier)"
+                    )
+                    return True
+                if not expr:
+                    print("Alias expression cannot be empty.")
+                    return True
+                try:
+                    expr_expanded = self.expand_aliases(expr)
+                except ValueError as e:
+                    print(f"Alias error in expression: {e}")
+                    return True
+                if name in self.aliases:
+                    print(
+                        f"Alias '{name}' replaced (was: {self.aliases[name]}) → now: {expr_expanded}"
+                    )
+                else:
+                    print(f"Alias added: {name} = {expr_expanded}")
+                self.aliases[name] = expr_expanded
+            return True
+        if line.startswith(".unalias"):
+            parts = line[len(".unalias") :].strip()
+            if parts in self.aliases:
+                del self.aliases[parts]
+                print(f"Alias removed: {parts}")
+            else:
+                print(f"No such alias: {parts}")
+            return True
+        self.add_history_once(line)
+
+        return False
+
+    def expand_aliases(self, line: str) -> str:
+        """Expands all aliases in a given input line.
+
+        Raises:
+            ValueError: If an alias used in the line is not defined.
+        """
+        if not self.aliases or "@" not in line:
+            return line
+
+        def tokenize(expr):
+            token_pattern = r"""(\".*?\"|\'.*?\'|\w+|@[a-zA-Z_][\w_]*|[^\s])"""
+            return re.findall(token_pattern, expr)
+
+        tokens = tokenize(line)
+        result = []
+
+        for token in tokens:
+            if re.fullmatch(r"@[a-zA-Z_]\w*", token):
+                if token in self.aliases:
+                    result.append(f"({self.aliases[token]})")
+                else:
+                    raise ValueError(f"Unknown alias: '{token}'")
+            else:
+                result.append(token)
+
+        return " ".join(result)
 
     def init_history(self):
         """Initializes the readline history from file."""
@@ -122,6 +221,31 @@ class GenericREPL:
         """Prints the current command history to stdout."""
         for i in range(1, readline.get_current_history_length() + 1):
             print(f"{i}: {readline.get_history_item(i)}")
+
+    def load_aliases_file(self, filename):
+        """Loads alias definitions from a file (lines starting with .alias)."""
+        if not os.path.exists(filename):
+            self.logger.warning("Aliases file not found: %s", filename)
+            return
+        try:
+            with open(filename, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith(".alias"):
+                        self.handle_alias_command(line)
+            self.logger.info("Loaded aliases file: %s", self.aliases_file)
+        except Exception as e:
+            print(f"Error loading aliases file {filename}: {e}")
+
+    def save_aliases_file(self, filename):
+        """Saves current aliases to a file using .alias syntax."""
+        try:
+            with open(filename, "w") as f:
+                for name, expr in sorted(self.aliases.items()):
+                    f.write(f".alias {name} = {expr}\n")
+            self.logger.info("Saved aliases to: %s", self.aliases_file)
+        except Exception as e:
+            print(f"Error saving aliases to {filename}: {e}")
 
     def load_file(self, path, *, label=None, show_errors=True):
         """Loads and executes each command from a file.
@@ -144,8 +268,20 @@ class GenericREPL:
                     if not line or line.startswith("#"):
                         continue
                     try:
-                        self.interpreter.eval(line)
-                        readline.add_history(line)
+                        if line.startswith("."):
+                            if self.handle_alias_command(line):
+                                self.add_history_once(line)
+                                continue
+                            else:
+                                print(f"Unknown meta-command in file: {line}")
+                                continue
+                        try:
+                            expanded = self.expand_aliases(line)
+                        except ValueError as e:
+                            print(f"Alias error in file {path}: {e}")
+                            continue
+                        self.interpreter.eval(expanded)
+                        self.add_history_once(line)
                     except Exception as e:
                         if show_errors:
                             print(f"Error in {label or path}: {e}")
@@ -155,8 +291,12 @@ class GenericREPL:
     def loop(self):
         """Starts the interactive REPL loop."""
         self.init_history()
-        readline.set_completer(REPLCompleter(self.interpreter).complete)
-        readline.parse_and_bind("tab: complete")
+        self.load_aliases_file(self.aliases_file)
+        completer = REPLCompleter(self.interpreter)
+        completer.repl = self  # expose self.aliases à la complétion
+        readline.set_completer(completer.complete)
+        readline.parse_and_bind("tab: complete")  # suppress '@' from delimiters
+        readline.set_completer_delims(" \t\n")
         print(self.hello_sentence)
         self.logger.info("REPL session started.")
 
@@ -190,7 +330,7 @@ class GenericREPL:
                         readline.remove_history_item(
                             readline.get_current_history_length() - 1
                         )
-                        readline.add_history(line)
+                        self.add_history_once(line)
                     except ValueError:
                         print("Use !N to recall a command by its index.")
                         continue
@@ -206,12 +346,15 @@ class GenericREPL:
 
                 if line == ".help":
                     print("REPL meta-commands:")
-                    print("  .exit, .quit     Exit the REPL")
-                    print("  .history         Show command history")
-                    print("  !N               Recall command at position N")
-                    print("  .clear           Clear the screen")
-                    print("  .reload          Reload the init file")
-                    print("  .help            Show this help message")
+                    print("  .exit, .quit          Exit the REPL")
+                    print("  .history              Show command history")
+                    print("  !N                    Recall command at position N")
+                    print("  .clear                Clear the screen")
+                    print("  .reload               Reload the init file")
+                    print("  .load                 Load a batch file")
+                    print("  .alias [@name=expr]   Define or list aliases")
+                    print("  .unalias @name        Remove an alias")
+                    print("  .help                 Show this help message")
                     continue
 
                 if line == ".clear":
@@ -230,20 +373,34 @@ class GenericREPL:
                     self.load_file(filepath, label=f".load {filepath}")
                     continue
 
+                # Handle alias commands
+                if self.handle_alias_command(line):
+                    continue
+
                 # Evaluate any other line through the interpreter
-                self.interpreter.eval(line)
+                try:
+                    expanded_line = self.expand_aliases(line)
+                except ValueError as e:
+                    print(f"Alias error: {e}")
+                    continue
+                try:
+                    self.interpreter.eval(expanded_line)
+                except Exception as e:
+                    print(f"Error: {e}")
+                self.add_history_once(line)
 
             # End of while True
         finally:
             self.save_history()
+            self.save_aliases_file(self.aliases_file)
 
 
 def repl(interpreter=None, argv=None):
-    """Main REPL entry point.
+    """Main REPL entry point with CLI support.
 
     Args:
-        interpreter: Interpreter instance implementing .eval() and optionally .get_keywords()
-        argv: Optional list of CLI arguments (e.g., ["--log", "out.log"])
+        interpreter: Optional interpreter instance (must implement .eval(), optionally .get_keywords()).
+        argv: Optional list of command-line arguments.
     """
 
     class DefaultInterpreter:
@@ -266,6 +423,7 @@ def repl(interpreter=None, argv=None):
     parser.add_argument("--prompt", default=">>> ", help="Prompt text")
     parser.add_argument("--hello", default="Welcome to REPL!", help="Welcome message")
     parser.add_argument("--log", default="~/repl.log", help="Log file path")
+    parser.add_argument("--alias", default="~/repl_aliases", help="Alias file path")
     parser.add_argument(
         "--loglevel", default="DEBUG", help="Logging level (DEBUG, INFO, WARNING...)"
     )
@@ -275,6 +433,7 @@ def repl(interpreter=None, argv=None):
     args = parser.parse_args(argv)
     args.history = str(Path(args.history).expanduser())
     args.log = str(Path(args.log).expanduser())
+    args.alias = str(Path(args.alias).expanduser())
 
     # Configure logger
     logger = logging.getLogger("repl_logger")
@@ -291,6 +450,7 @@ def repl(interpreter=None, argv=None):
     repl_instance = GenericREPL(
         interpreter=interpreter,
         history_file=args.history,
+        aliases_file=args.alias,
         prompt=args.prompt,
         hello_sentence=args.hello,
         logger=logger,

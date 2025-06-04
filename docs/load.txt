@@ -1,0 +1,3 @@
+.alias @T1 = A and B
+.alias @T2 = @T1 or C
+@T2
