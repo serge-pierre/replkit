@@ -1,57 +1,57 @@
-# ✅ REPLKit — Revue Technique du Système d’Aliases (`@name`)
+# REPLKit — Technical Checklist for the Alias System (`@name`)
 
-Cette checklist vise à valider la robustesse, la cohérence et l'ergonomie du système d'alias dans `replkit`.
-
----
-
-## 1. Fonctionnalité de base
-
-- [x] `.alias @name = expr` crée un alias
-- [x] `.alias` affiche la liste des alias
-- [x] `.unalias @name` supprime un alias
-- [x] L’expansion a lieu avant `eval()`
-- [x] L’expansion ne fait pas planter le REPL (erreurs gérées proprement)
-- [x] Préfixe `@` obligatoire (évite collisions)
-- [x] Les alias sont ajoutés à la complétion (Tab)
-- [x] Historique capture `.alias`/`.unalias` comme commandes utilisateur
+This checklist aims to validate the robustness, consistency, and usability of the alias system in `replkit`.
 
 ---
 
-## 2. Sécurité et cohérence
+## 1. Basic Functionality
 
-- [x] Rejet des noms d’alias invalides (`@1abc`, `@with space`, etc.)
-- [x] Erreur claire si un alias non défini est utilisé (`Alias error: Unknown alias`)
-- [x] Avertissement ou rejet lors de la redéfinition d’un alias déjà existant
-- [x] Interdiction de contenu vide : `.alias @foo = `
-- [ ] Avertissement si l’alias masque une expression équivalente existante (`@foo = @foo`)
-- [ ] Vérification future possible de circularité (`@A = @B`, `@B = @A`) – non bloquant pour v1
+- [x] `.alias @name = expr` creates an alias
+- [x] `.alias` lists all defined aliases
+- [x] `.unalias @name` removes an alias
+- [x] Expansion takes place before `eval()`
+- [x] Expansion does not crash the REPL (errors are handled gracefully)
+- [x] The `@` prefix is required (avoids collisions)
+- [x] Aliases are included in tab-completion
+- [x] `.alias`/`.unalias` commands are added to history
+
+---
+
+## 2. Safety and Consistency
+
+- [x] Invalid alias names are rejected (`@1abc`, `@with space`, etc.)
+- [x] Clear error message when using an undefined alias (`Alias error: Unknown alias`)
+- [x] Warning or replacement message when redefining an existing alias
+- [x] Empty expressions are disallowed: `.alias @foo = `
+- [ ] Warning if alias expression is identical to its name (`@foo = @foo`)
+- [ ] Future detection of circular definitions (`@A = @B`, `@B = @A`) — not required for v1
 
 ---
 
 ## 3. UX / Interface
 
-- [x] Complétion Tab sur `@name` fonctionne (`readline.set_completer_delims`)
-- [x] `.help` liste les commandes `.alias`, `.unalias`
-- [x] Message affiché lors d’une redéfinition (`Alias '@x' replaced (was: ...)`)
+- [x] Tab completion on `@name` works (`readline.set_completer_delims`)
+- [x] `.help` lists `.alias`, `.unalias` commands
+- [x] Message shown when redefining an alias (`Alias '@x' replaced (was: ...)`)
 
 ---
 
-## 4. Intégration et extensibilité
+## 4. Integration and Extensibility
 
-- [x] Préparer interface future pour persistance des alias
-- [x] Vérifier le comportement dans les scripts (`--file`, `.load`) :
-- [x] alias définis dans fichier fonctionnent
-- [x] erreur si fichier contient un alias invalide
-- [x] Tester interaction avec l’historique (`!N`) sur lignes contenant des alias
+- [x] Prepared for future interface for alias persistence
+- [x] Validated behavior in scripts (`--file`, `.load`):
+- [x] Aliases defined in files are correctly interpreted
+- [x] Errors are raised on invalid aliases in files
+- [x] Tested compatibility with history recall (`!N`) for alias-containing lines
 
 ---
 
-## 5. Tests recommandés
+## 5. Recommended Tests
 
-Créer test unitaire pour :
+Create unit tests for:
 
-- [x] `expand_aliases()` avec plusieurs alias
-- [x] Détection alias inconnu
-- [ ] Redéfinition
-- [ ] Suppression
-- [x] Vérifier qu’un alias n’est jamais substitué à l’intérieur d’un nom (ex: `@and` ≠ `@andromede`)
+- [x] `expand_aliases()` with multiple alias substitutions
+- [x] Detection of unknown alias
+- [ ] Alias redefinition
+- [ ] Alias removal
+- [x] Ensure alias names are never replaced inside longer names (e.g. `@and` ≠ `@andromede`)
