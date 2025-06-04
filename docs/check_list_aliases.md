@@ -22,7 +22,7 @@ Cette checklist vise à valider la robustesse, la cohérence et l'ergonomie du s
 - [x] Rejet des noms d’alias invalides (`@1abc`, `@with space`, etc.)
 - [x] Erreur claire si un alias non défini est utilisé (`Alias error: Unknown alias`)
 - [x] Avertissement ou rejet lors de la redéfinition d’un alias déjà existant
-- [ ] Interdiction de contenu vide : `.alias @foo = `
+- [x] Interdiction de contenu vide : `.alias @foo = `
 - [ ] Avertissement si l’alias masque une expression équivalente existante (`@foo = @foo`)
 - [ ] Vérification future possible de circularité (`@A = @B`, `@B = @A`) – non bloquant pour v1
 
@@ -38,7 +38,7 @@ Cette checklist vise à valider la robustesse, la cohérence et l'ergonomie du s
 
 ## 4. Intégration et extensibilité
 
-- [ ] Préparer interface future pour `.alias --export` / `.alias --import` (non bloquant)
+- [x] Préparer interface future pour persistance des alias
 - [x] Vérifier le comportement dans les scripts (`--file`, `.load`) :
 - [x] alias définis dans fichier fonctionnent
 - [x] erreur si fichier contient un alias invalide

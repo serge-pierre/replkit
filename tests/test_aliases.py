@@ -4,9 +4,14 @@ import unittest
 
 from replkit.generic_repl import GenericREPL
 
+
 class DummyInterpreter:
-    def eval(self, line): pass
-    def get_keywords(self): return set()
+    def eval(self, line):
+        pass
+
+    def get_keywords(self):
+        return set()
+
 
 class AliasTests(unittest.TestCase):
     def setUp(self):
@@ -34,10 +39,10 @@ class AliasTests(unittest.TestCase):
 
         self.assertIn("Unknown alias: '@A1'", str(context.exception))
 
-
     def test_no_aliases_defined(self):
         result = self.repl.expand_aliases("A and B")
         self.assertEqual(result, "A and B")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
