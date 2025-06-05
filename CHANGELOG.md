@@ -6,6 +6,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.0.0] – 2025-06-06
+
+### Added
+
+- Full alias system with support for:
+  - `.alias @NAME = EXPRESSION` to define symbolic aliases
+  - `.unalias @NAME` to remove existing aliases
+  - Persistent storage of aliases via `.repl_aliases` (loaded and saved automatically)
+  - Strict substitution with error reporting on undefined aliases
+- Inline alias expansion (`@name`) with safe substitution in interpreter input
+- Alias completion: `@...` names are now included in tab-completion
+- `.alias` command with no arguments lists all active aliases
+- Aliases now persist across REPL sessions, like history
+- Aliases are expanded within `.load`, `--file`, and `--run` sources
+- History tracking improved to avoid duplicate entries (e.g., with `@X` or `!N`)
+- Unit test coverage for:
+  - Alias substitution and protection
+  - Error handling for undefined and malformed aliases
+  - History interaction with `.alias`, `.unalias`, `.load`, and `!N`
+
+### Changed
+
+- `.load` now supports alias definitions in input files (`.alias @X = ...`)
+- The REPL no longer crashes if an alias is undefined; instead, a clear `Alias error: ...` is shown
+- `.help` and tab completion dynamically reflect current alias list
+- Alias definitions in `.alias` now expand other aliases during assignment (e.g., `.alias @X = @Y or Z`)
+- Tab completion now unified across aliases, meta-commands, and interpreter keywords
+
+### Fixed
+
+- Commands from `.load` or `--file` were not tracked in history — now correctly logged
+- Previously, repeating the same input (e.g., `@Z`) added duplicate entries — now deduplicated
+- Alias references like `@A1` are no longer partially expanded (e.g., `(True)1`)
+- Fixed inconsistent behavior when `.alias` was used within init files or scripts
+
+### Development
+
+- Added full alias checklist covering edge cases, substitutions, and persistence
+- `GenericREPL` cleaned and documented: inline comments clarified for core REPL logic
+- Alias handling centralized and unit-tested (`expand_aliases`, `handle_alias_command`)
+- Finalized and documented `add_history_once()` method to protect REPL history integrity
+
 ## [0.2.0] – 2025-06-01
 
 ### Added
