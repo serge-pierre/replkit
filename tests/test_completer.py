@@ -111,3 +111,18 @@ def test_completer_meta_and_keywords():
     assert ".help" in results
     assert ".reload" in results
     assert "run" not in results  # not a meta-command, doesn't start with '.'
+
+
+def test_completer_aliases_suggestions():
+    interpreter = DummyInterpreter()
+    aliases = {"@f": "42", "@g": "x"}
+    completer = REPLCompleter(interpreter, aliases=aliases)
+    results = collect_completions(completer, "@")
+    assert "@f" in results
+    assert "@g" in results
+
+def test_completer_space_behavior():
+    interpreter = DummyInterpreter()
+    completer = REPLCompleter(interpreter)
+    results = collect_completions(completer, " ")
+    assert results == []  # pas de suggestion sur espace vide

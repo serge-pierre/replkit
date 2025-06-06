@@ -133,3 +133,27 @@ def test_unalias_command(capsys):
     assert "@foo" not in dummy.aliases
     out = capsys.readouterr().out
     assert "Alias removed" in out
+
+
+def test_clear_command_exception(monkeypatch):
+    def fail_clear(cmd):
+        raise OSError("fail!")
+    monkeypatch.setattr("os.system", fail_clear)
+    cmd = ClearCommand()
+    # Le REPL ne doit pas crasher sur l’exception !
+    try:
+        cmd.execute(".clear", DummyREPL())
+    except Exception:
+        pytest.fail("ClearCommand should handle exceptions in os.system")
+
+def test_command_handlers_extensible():
+    class FooCommand:
+        def matches(self, line): return line == ".foo"
+        def execute(self, line, repl): repl.output.append("foo"); return True
+        def describe(self): return ".foo   Custom test command"
+    dummy = DummyREPL()
+    dummy.command_handlers = [FooCommand()]
+    for cmd in dummy.command_handlers:
+        if cmd.matches(".foo"):
+            assert cmd.execute(".foo", dummy) is True
+    assert "foo" in dummy.output

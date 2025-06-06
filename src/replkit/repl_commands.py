@@ -54,7 +54,10 @@ class ClearCommand(BaseCommand):
         return line == ".clear"
 
     def execute(self, line, repl):
-        os.system("clear")  # or "cls" on Windows
+        try:
+            os.system("clear")  # or "cls" on Windows
+        except Exception as e:
+            print(f"Failed to clear screen: {e}")
         return True
 
     def describe(self): return ".clear                Clear the screen"

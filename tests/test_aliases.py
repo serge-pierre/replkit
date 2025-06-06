@@ -65,3 +65,21 @@ def test_handle_unalias_missing(capsys):
     assert result is True
     out = capsys.readouterr().out
     assert "No such alias: @missing" in out
+
+def test_handle_alias_collision(capsys):
+    aliases = {"@foo": "old"}
+    handle_alias_command(".alias @foo=new", aliases)
+    assert aliases["@foo"] == "new"
+    out = capsys.readouterr().out
+    assert "replaced" in out or "Alias added" in out
+
+def test_handle_alias_special_chars(capsys):
+    aliases = {}
+    handle_alias_command('.alias @weird="a + b - c"', aliases)
+    assert aliases["@weird"] == '"a + b - c"'
+
+def test_expand_aliases_with_nested_alias():
+    aliases = {"@A": "1", "@B": "@A 2 +"}
+    expanded = expand_aliases("@B", aliases)
+    # Selon la sémantique choisie, ajuster ce test si expansion récursive un jour souhaitée
+    assert expanded == "(@A 2 +)"  # ou "1 2 +" si expansion récursive
