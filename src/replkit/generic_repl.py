@@ -11,6 +11,16 @@ import logging
 import argparse
 import re
 from .cli_utils import configure_logger, expand_user_paths
+from .repl_commands import (
+    BaseCommand,
+    ExitCommand,
+    HelpCommand,
+    ClearCommand,
+    HistoryCommand,
+    ReloadCommand,
+    LoadCommand,
+    AliasCommand,
+)
 
 
 class REPLCompleter:
@@ -113,6 +123,15 @@ class GenericREPL:
         self.init_file = None  # Will hold the path to a file executed before looping
         self.aliases_file = aliases_file
         self.aliases = {}
+        self.command_handlers = [
+            ExitCommand(),
+            HelpCommand(),
+            ClearCommand(),
+            HistoryCommand(),
+            ReloadCommand(),
+            LoadCommand(),
+            AliasCommand(),
+        ]
 
     def add_history_once(self, line: str):
         """Adds a line to readline history if it's not already the last entry."""
@@ -317,45 +336,9 @@ class GenericREPL:
             return True
 
         # Meta-commands
-        if line == ".history":
-            self.print_history()
-            return True
-
-        if line in (".exit", ".quit"):
-            print("Bye!")
-            return False
-
-        if line == ".help":
-            print("REPL meta-commands:")
-            print("  .exit, .quit          Exit the REPL")
-            print("  .history              Show command history")
-            print("  !N                    Recall command at position N")
-            print("  .clear                Clear the screen")
-            print("  .reload               Reload the init file")
-            print("  .load <file>          Load a batch file")
-            print("  .alias [@name=expr]   Define or list aliases")
-            print("  .unalias @name        Remove an alias")
-            print("  .help                 Show this help message")
-            return True
-
-        if line == ".clear":
-            os.system("clear")  # or 'cls' on Windows
-            return True
-
-        if line == ".reload":
-            if self.init_file:
-                self.load_file(self.init_file, label=".reload")
-            else:
-                print("No file was originally loaded to reload.")
-            return True
-
-        if line.startswith(".load "):
-            filepath = line.split(maxsplit=1)[1]
-            self.load_file(filepath, label=f".load {filepath}")
-            return True
-
-        if self.handle_alias_command(line):
-            return True
+        for cmd in self.command_handlers:
+            if cmd.matches(line):
+                return cmd.execute(line, self)
 
         # Evaluate the line
         try:
