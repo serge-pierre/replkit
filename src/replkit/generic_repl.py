@@ -287,6 +287,91 @@ class GenericREPL:
         except Exception as e:
             print(f"Failed to read {label or path}: {e}")
 
+    def process_line(self, line: str) -> bool:
+        """Processes a single line of input. Returns True to continue, False to exit.
+
+        Args:
+            line: The input line to process.
+
+        Returns:
+            bool: True to continue the loop, False to exit.
+        """
+        line = line.strip()
+        if not line:
+            return True
+
+        # Recall command from history
+        if line.startswith("!"):
+            try:
+                index = int(line[1:])
+                recalled = readline.get_history_item(index)
+                if recalled is None:
+                    print(f"No command at index {index}")
+                    return True
+                print(f"# {recalled}")
+                readline.remove_history_item(readline.get_current_history_length() - 1)
+                self.add_history_once(recalled)
+                return self.process_line(recalled)
+            except ValueError:
+                print("Use !N to recall a command by its index.")
+            return True
+
+        # Meta-commands
+        if line == ".history":
+            self.print_history()
+            return True
+
+        if line in (".exit", ".quit"):
+            print("Bye!")
+            return False
+
+        if line == ".help":
+            print("REPL meta-commands:")
+            print("  .exit, .quit          Exit the REPL")
+            print("  .history              Show command history")
+            print("  !N                    Recall command at position N")
+            print("  .clear                Clear the screen")
+            print("  .reload               Reload the init file")
+            print("  .load <file>          Load a batch file")
+            print("  .alias [@name=expr]   Define or list aliases")
+            print("  .unalias @name        Remove an alias")
+            print("  .help                 Show this help message")
+            return True
+
+        if line == ".clear":
+            os.system("clear")  # or 'cls' on Windows
+            return True
+
+        if line == ".reload":
+            if self.init_file:
+                self.load_file(self.init_file, label=".reload")
+            else:
+                print("No file was originally loaded to reload.")
+            return True
+
+        if line.startswith(".load "):
+            filepath = line.split(maxsplit=1)[1]
+            self.load_file(filepath, label=f".load {filepath}")
+            return True
+
+        if self.handle_alias_command(line):
+            return True
+
+        # Evaluate the line
+        try:
+            expanded = self.expand_aliases(line)
+        except ValueError as e:
+            print(f"Alias error: {e}")
+            return True
+
+        try:
+            self.interpreter.eval(expanded)
+        except Exception as e:
+            print(f"Error: {e}")
+
+        self.add_history_once(line)
+        return True
+
     def loop(self):
         """Starts the interactive REPL loop."""
         # Initialize the loop
@@ -303,93 +388,16 @@ class GenericREPL:
         try:
             while True:
                 try:
-                    line = input(self.prompt).strip()
+                    line = input(self.prompt)
                 except KeyboardInterrupt:
-                    # Handle Ctrl-C gracefully
                     print("\nUse .exit .quit or Ctrl-D to leave.")
                     continue
                 except EOFError:
-                    # Handle Ctrl-D: exit immediately
                     print("\nBye!")
                     break
 
-                if not line:
-                    continue
-
-                # Meta-command: !N – recall a previous history entry
-                if line.startswith("!"):
-                    try:
-                        index = int(line[1:])
-                        recalled = readline.get_history_item(index)
-                        if recalled is None:
-                            print(f"No command at index {index}")
-                            continue
-                        print(f"# {recalled}")
-                        line = recalled
-                        # Replace the “!N” entry in history with the recalled command
-                        readline.remove_history_item(
-                            readline.get_current_history_length() - 1
-                        )
-                        self.add_history_once(line)
-                    except ValueError:
-                        print("Use !N to recall a command by its index.")
-                        continue
-
-                # Meta-commands prefixed with '.'
-                if line == ".history":
-                    self.print_history()
-                    continue
-
-                if line in (".exit", ".quit"):
-                    print("Bye!")
+                if not self.process_line(line):
                     break
-
-                if line == ".help":
-                    print("REPL meta-commands:")
-                    print("  .exit, .quit          Exit the REPL")
-                    print("  .history              Show command history")
-                    print("  !N                    Recall command at position N")
-                    print("  .clear                Clear the screen")
-                    print("  .reload               Reload the init file")
-                    print("  .load                 Load a batch file")
-                    print("  .alias [@name=expr]   Define or list aliases")
-                    print("  .unalias @name        Remove an alias")
-                    print("  .help                 Show this help message")
-                    continue
-
-                if line == ".clear":
-                    os.system("clear")  # or 'cls' on Windows
-                    continue
-
-                if line == ".reload":
-                    if self.init_file:
-                        self.load_file(self.init_file, label=".reload")
-                    else:
-                        print("No file was originally loaded to reload.")
-                    continue
-
-                if line.startswith(".load "):
-                    filepath = line.split(maxsplit=1)[1]
-                    self.load_file(filepath, label=f".load {filepath}")
-                    continue
-
-                # Handle alias commands
-                if self.handle_alias_command(line):
-                    continue
-
-                # Evaluate any other line through the interpreter
-                try:
-                    expanded_line = self.expand_aliases(line)
-                except ValueError as e:
-                    print(f"Alias error: {e}")
-                    continue
-                try:
-                    self.interpreter.eval(expanded_line)
-                except Exception as e:
-                    print(f"Error: {e}")
-                self.add_history_once(line)
-
-            # End of while True
         finally:
             self.save_history()
             self.save_aliases_file(self.aliases_file)
