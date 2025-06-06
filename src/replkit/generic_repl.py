@@ -290,6 +290,7 @@ class GenericREPL:
 
     def loop(self):
         """Starts the interactive REPL loop."""
+        # Initialize the loop
         self.init_history()
         self.load_aliases_file(self.aliases_file)
         completer = REPLCompleter(self.interpreter)
@@ -300,6 +301,7 @@ class GenericREPL:
         print(self.hello_sentence)
         self.logger.info("REPL session started.")
 
+        # Loop's body
         try:
             while True:
                 try:
@@ -403,33 +405,20 @@ def repl(interpreter=None, argv=None):
         argv: Optional list of command-line arguments.
     """
 
-    class DefaultInterpreter:
-        """Simple interpreter used if no interpreter is passed."""
-
-        def __init__(self):
-            self.words = {"print", "dup", "drop", "swap"}
-
-        def eval(self, line):
-            print(f"You typed: {line}")
-
-        def get_keywords(self):
-            return self.words
-
-    parser = argparse.ArgumentParser(description="Generic REPL runner")
-
+    # Parse argv
+    parser = argparse.ArgumentParser(description="Generic REPL parser")
+    parser.add_argument("--prompt", default=">>> ", help="Prompt text")
+    parser.add_argument("--hello", default="Welcome to REPL!", help="Welcome message")
     parser.add_argument(
         "--history", default="~/repl_history", help="Path to history file"
     )
-    parser.add_argument("--prompt", default=">>> ", help="Prompt text")
-    parser.add_argument("--hello", default="Welcome to REPL!", help="Welcome message")
-    parser.add_argument("--log", default="~/repl.log", help="Log file path")
     parser.add_argument("--alias", default="~/repl_aliases", help="Alias file path")
+    parser.add_argument("--log", default="~/repl.log", help="Log file path")
     parser.add_argument(
         "--loglevel", default="DEBUG", help="Logging level (DEBUG, INFO, WARNING...)"
     )
     parser.add_argument("--run", help="Command to execute before entering the REPL")
     parser.add_argument("--file", help="File containing commands to execute")
-
     args = parser.parse_args(argv)
     args.history = str(Path(args.history).expanduser())
     args.log = str(Path(args.log).expanduser())
@@ -438,21 +427,23 @@ def repl(interpreter=None, argv=None):
     # Configure logger
     logger = logging.getLogger("repl_logger")
     logger.setLevel(getattr(logging, args.loglevel.upper(), logging.DEBUG))
-
     handler = logging.FileHandler(args.log)
     handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     logger.addHandler(handler)
 
     # Use provided interpreter or default fallback
     if interpreter is None:
+        from .default_interpreter import DefaultInterpreter
+
         interpreter = DefaultInterpreter()
 
+    # Instantiates the REPL
     repl_instance = GenericREPL(
         interpreter=interpreter,
-        history_file=args.history,
-        aliases_file=args.alias,
         prompt=args.prompt,
         hello_sentence=args.hello,
+        history_file=args.history,
+        aliases_file=args.alias,
         logger=logger,
     )
 
