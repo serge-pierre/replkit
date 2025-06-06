@@ -14,16 +14,18 @@ from pathlib import Path
 
 
 class REPLCompleter:
-    """Provides tab-completion for REPL commands using interpreter keywords, meta-commands, and history."""
+    """Provides tab-completion for REPL commands using interpreter keywords, meta-commands, aliases, and history."""
 
-    def __init__(self, interpreter, meta_commands=None):
+    def __init__(self, interpreter, aliases=None, meta_commands=None):
         """Initializes the REPL completer.
 
         Args:
             interpreter: The interpreter instance providing `get_keywords()`.
+            aliases: Optional dictionary of aliases.
             meta_commands: Optional set of built-in REPL commands.
         """
-        # Default set of .meta-commands
+        self.interpreter = interpreter
+        self.aliases = aliases or {}
         self.meta_commands = meta_commands or {
             ".exit",
             ".quit",
@@ -35,8 +37,6 @@ class REPLCompleter:
             ".alias",
             ".unalias",
         }
-        self.interpreter = interpreter
-        self.repl = None  # To be set by REPL instance if needed
         self.matches = []
 
     def complete(self, text, state):
@@ -58,8 +58,7 @@ class REPLCompleter:
                 except Exception:
                     pass
 
-            if self.repl and hasattr(self.repl, "aliases"):
-                words.update(self.repl.aliases.keys())
+            words.update(self.aliases.keys())
 
             for i in range(1, readline.get_current_history_length() + 1):
                 entry = readline.get_history_item(i)
@@ -293,8 +292,7 @@ class GenericREPL:
         # Initialize the loop
         self.init_history()
         self.load_aliases_file(self.aliases_file)
-        completer = REPLCompleter(self.interpreter)
-        completer.repl = self  # expose self.aliases à la complétion
+        completer = REPLCompleter(self.interpreter, aliases=self.aliases)
         readline.set_completer(completer.complete)
         readline.parse_and_bind("tab: complete")  # suppress '@' from delimiters
         readline.set_completer_delims(" \t\n")
