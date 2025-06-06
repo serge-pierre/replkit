@@ -10,7 +10,7 @@ import readline
 import logging
 import argparse
 import re
-from pathlib import Path
+from .cli_utils import configure_logger, expand_user_paths
 
 
 class REPLCompleter:
@@ -395,16 +395,16 @@ class GenericREPL:
             self.save_aliases_file(self.aliases_file)
 
 
-def repl(interpreter=None, argv=None):
-    """Main REPL entry point with CLI support.
+def parse_repl_args(argv=None):
+    """Parses command-line arguments for the REPL CLI.
 
     Args:
-        interpreter: Optional interpreter instance (must implement .eval(), optionally .get_keywords()).
-        argv: Optional list of command-line arguments.
-    """
+        argv: Optional list of arguments (used for testing or programmatic usage).
 
-    # Parse argv
-    parser = argparse.ArgumentParser(description="Generic REPL parser")
+    Returns:
+        argparse.Namespace: The parsed arguments with expanded paths.
+    """
+    parser = argparse.ArgumentParser(description="Generic REPL CLI")
     parser.add_argument("--prompt", default=">>> ", help="Prompt text")
     parser.add_argument("--hello", default="Welcome to REPL!", help="Welcome message")
     parser.add_argument(
@@ -417,17 +417,27 @@ def repl(interpreter=None, argv=None):
     )
     parser.add_argument("--run", help="Command to execute before entering the REPL")
     parser.add_argument("--file", help="File containing commands to execute")
+
     args = parser.parse_args(argv)
-    args.history = str(Path(args.history).expanduser())
-    args.log = str(Path(args.log).expanduser())
-    args.alias = str(Path(args.alias).expanduser())
+
+    expand_user_paths(args)
+
+    return args
+
+
+def repl(interpreter=None, argv=None):
+    """Main REPL entry point with CLI support.
+
+    Args:
+        interpreter: Optional interpreter instance (must implement .eval(), optionally .get_keywords()).
+        argv: Optional list of command-line arguments.
+    """
+
+    # Parse argv
+    args = parse_repl_args(argv)
 
     # Configure logger
-    logger = logging.getLogger("repl_logger")
-    logger.setLevel(getattr(logging, args.loglevel.upper(), logging.DEBUG))
-    handler = logging.FileHandler(args.log)
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-    logger.addHandler(handler)
+    logger = configure_logger(args.log, args.loglevel)
 
     # Use provided interpreter or default fallback
     if interpreter is None:
