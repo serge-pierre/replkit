@@ -20,7 +20,10 @@ from .repl_commands import (
     ReloadCommand,
     LoadCommand,
     AliasCommand,
+    UnaliasCommand,
 )
+from .alias import expand_aliases, handle_alias_command
+from .history_mixin import HistoryMixin
 
 
 class REPLCompleter:
@@ -80,7 +83,7 @@ class REPLCompleter:
         return self.matches[state] if state < len(self.matches) else None
 
 
-class GenericREPL:
+class GenericREPL(HistoryMixin):
     """A customizable Read-Eval-Print Loop (REPL) for command interpreters.
 
     Attributes:
@@ -131,114 +134,116 @@ class GenericREPL:
             ReloadCommand(),
             LoadCommand(),
             AliasCommand(),
+            UnaliasCommand(),
         ]
 
-    def add_history_once(self, line: str):
-        """Adds a line to readline history if it's not already the last entry."""
-        hist_len = readline.get_current_history_length()
-        if hist_len == 0 or readline.get_history_item(hist_len) != line:
-            readline.add_history(line)
+    # def add_history_once(self, line: str):
+    #     """Adds a line to readline history if it's not already the last entry."""
+    #     hist_len = readline.get_current_history_length()
+    #     if hist_len == 0 or readline.get_history_item(hist_len) != line:
+    #         readline.add_history(line)
 
-    def handle_alias_command(self, line: str) -> bool:
-        """Handles alias creation, listing, and removal.
 
-        Args:
-            line: A command line starting with .alias or .unalias.
+    # def handle_alias_command(self, line: str) -> bool:
+    #     """Handles alias creation, listing, and removal.
 
-        Returns:
-            True if the line was an alias command, False otherwise.
-        """
-        if line.startswith(".alias"):
-            parts = line[len(".alias") :].strip()
-            if not parts:
-                if not self.aliases:
-                    print("No aliases defined.")
-                else:
-                    for name, expr in sorted(self.aliases.items()):
-                        print(f"{name} = {expr}")
-            else:
-                if "=" not in parts:
-                    print("Usage: .alias name=expression")
-                    return True
-                name, expr = map(str.strip, parts.split("=", 1))
-                if not name.startswith("@") or not name[1:].isidentifier():
-                    print(
-                        f"Invalid alias name: '{name}' (must start with '@' and be a valid identifier)"
-                    )
-                    return True
-                if not expr:
-                    print("Alias expression cannot be empty.")
-                    return True
-                try:
-                    expr_expanded = self.expand_aliases(expr)
-                except ValueError as e:
-                    print(f"Alias error in expression: {e}")
-                    return True
-                if name in self.aliases:
-                    print(
-                        f"Alias '{name}' replaced (was: {self.aliases[name]}) → now: {expr_expanded}"
-                    )
-                else:
-                    print(f"Alias added: {name} = {expr_expanded}")
-                self.aliases[name] = expr_expanded
-            return True
-        if line.startswith(".unalias"):
-            parts = line[len(".unalias") :].strip()
-            if parts in self.aliases:
-                del self.aliases[parts]
-                print(f"Alias removed: {parts}")
-            else:
-                print(f"No such alias: {parts}")
-            return True
-        self.add_history_once(line)
+    #     Args:
+    #         line: A command line starting with .alias or .unalias.
 
-        return False
+    #     Returns:
+    #         True if the line was an alias command, False otherwise.
+    #     """
+    #     if line.startswith(".alias"):
+    #         parts = line[len(".alias") :].strip()
+    #         if not parts:
+    #             if not self.aliases:
+    #                 print("No aliases defined.")
+    #             else:
+    #                 for name, expr in sorted(self.aliases.items()):
+    #                     print(f"{name} = {expr}")
+    #         else:
+    #             if "=" not in parts:
+    #                 print("Usage: .alias name=expression")
+    #                 return True
+    #             name, expr = map(str.strip, parts.split("=", 1))
+    #             if not name.startswith("@") or not name[1:].isidentifier():
+    #                 print(
+    #                     f"Invalid alias name: '{name}' (must start with '@' and be a valid identifier)"
+    #                 )
+    #                 return True
+    #             if not expr:
+    #                 print("Alias expression cannot be empty.")
+    #                 return True
+    #             try:
+    #                 expr_expanded = expand_aliases(expr, self.aliases)
+    #             except ValueError as e:
+    #                 print(f"Alias error in expression: {e}")
+    #                 return True
+    #             if name in self.aliases:
+    #                 print(
+    #                     f"Alias '{name}' replaced (was: {self.aliases[name]}) → now: {expr_expanded}"
+    #                 )
+    #             else:
+    #                 print(f"Alias added: {name} = {expr_expanded}")
+    #             self.aliases[name] = expr_expanded
+    #         return True
+    #     if line.startswith(".unalias"):
+    #         parts = line[len(".unalias") :].strip()
+    #         if parts in self.aliases:
+    #             del self.aliases[parts]
+    #             print(f"Alias removed: {parts}")
+    #         else:
+    #             print(f"No such alias: {parts}")
+    #         return True
+    #     self.add_history_once(line)
 
-    def expand_aliases(self, line: str) -> str:
-        """Expands all aliases in a given input line.
+    #     return False
 
-        Raises:
-            ValueError: If an alias used in the line is not defined.
-        """
-        if not self.aliases or "@" not in line:
-            return line
+    # def expand_aliases(self, line: str) -> str:
+    #     """Expands all aliases in a given input line.
 
-        def tokenize(expr):
-            token_pattern = r"""(\".*?\"|\'.*?\'|\w+|@[a-zA-Z_][\w_]*|[^\s])"""
-            return re.findall(token_pattern, expr)
+    #     Raises:
+    #         ValueError: If an alias used in the line is not defined.
+    #     """
+    #     if not self.aliases or "@" not in line:
+    #         return line
 
-        tokens = tokenize(line)
-        result = []
+    #     def tokenize(expr):
+    #         token_pattern = r"""(\".*?\"|\'.*?\'|\w+|@[a-zA-Z_][\w_]*|[^\s])"""
+    #         return re.findall(token_pattern, expr)
 
-        for token in tokens:
-            if re.fullmatch(r"@[a-zA-Z_]\w*", token):
-                if token in self.aliases:
-                    result.append(f"({self.aliases[token]})")
-                else:
-                    raise ValueError(f"Unknown alias: '{token}'")
-            else:
-                result.append(token)
+    #     tokens = tokenize(line)
+    #     result = []
 
-        return " ".join(result)
+    #     for token in tokens:
+    #         if re.fullmatch(r"@[a-zA-Z_]\w*", token):
+    #             if token in self.aliases:
+    #                 result.append(f"({self.aliases[token]})")
+    #             else:
+    #                 raise ValueError(f"Unknown alias: '{token}'")
+    #         else:
+    #             result.append(token)
 
-    def init_history(self):
-        """Initializes the readline history from file."""
-        try:
-            readline.read_history_file(self.history_file)
-            self.logger.info("Loaded history file: %s", self.history_file)
-        except FileNotFoundError:
-            self.logger.warning("History file not found: %s", self.history_file)
-        readline.set_history_length(self.history_length)
+    #     return " ".join(result)
 
-    def save_history(self):
-        """Saves the readline history to file."""
-        readline.write_history_file(self.history_file)
-        self.logger.info("Saved history to: %s", self.history_file)
+    # def init_history(self):
+    #     """Initializes the readline history from file."""
+    #     try:
+    #         readline.read_history_file(self.history_file)
+    #         self.logger.info("Loaded history file: %s", self.history_file)
+    #     except FileNotFoundError:
+    #         self.logger.warning("History file not found: %s", self.history_file)
+    #     readline.set_history_length(self.history_length)
 
-    def print_history(self):
-        """Prints the current command history to stdout."""
-        for i in range(1, readline.get_current_history_length() + 1):
-            print(f"{i}: {readline.get_history_item(i)}")
+    # def save_history(self):
+    #     """Saves the readline history to file."""
+    #     readline.write_history_file(self.history_file)
+    #     self.logger.info("Saved history to: %s", self.history_file)
+
+    # def print_history(self):
+    #     """Prints the current command history to stdout."""
+    #     for i in range(1, readline.get_current_history_length() + 1):
+    #         print(f"{i}: {readline.get_history_item(i)}")
 
     def load_aliases_file(self, filename):
         """Loads alias definitions from a file (lines starting with .alias)."""
@@ -250,7 +255,7 @@ class GenericREPL:
                 for line in f:
                     line = line.strip()
                     if line.startswith(".alias"):
-                        self.handle_alias_command(line)
+                        handle_alias_command(line, self.aliases)
             self.logger.info("Loaded aliases file: %s", self.aliases_file)
         except Exception as e:
             print(f"Error loading aliases file {filename}: {e}")
@@ -287,14 +292,14 @@ class GenericREPL:
                         continue
                     try:
                         if line.startswith("."):
-                            if self.handle_alias_command(line):
+                            if handle_alias_command(line, self.aliases):
                                 self.add_history_once(line)
                                 continue
                             else:
                                 print(f"Unknown meta-command in file: {line}")
                                 continue
                         try:
-                            expanded = self.expand_aliases(line)
+                            expanded = expand_aliases(line, self.aliases)
                         except ValueError as e:
                             print(f"Alias error in file {path}: {e}")
                             continue
@@ -342,13 +347,13 @@ class GenericREPL:
 
         # Evaluate the line
         try:
-            expanded = self.expand_aliases(line)
+            expanded_line = expand_aliases(line, self.aliases)
         except ValueError as e:
             print(f"Alias error: {e}")
             return True
 
         try:
-            self.interpreter.eval(expanded)
+            self.interpreter.eval(expanded_line)
         except Exception as e:
             print(f"Error: {e}")
 
