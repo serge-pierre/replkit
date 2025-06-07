@@ -1,7 +1,6 @@
 # history_mixin.py
 
 import readline
-import logging
 
 
 class HistoryMixin:

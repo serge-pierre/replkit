@@ -5,14 +5,11 @@ Provides a generic REPL engine with pluggable interpreters, command history,
 tab-completion, alias support and meta-command support.
 """
 
-import os
 import readline
 import logging
 import argparse
-import re
 from .cli_utils import configure_logger, expand_user_paths
 from .repl_commands import (
-    BaseCommand,
     ExitCommand,
     HelpCommand,
     ClearCommand,
@@ -22,7 +19,7 @@ from .repl_commands import (
     AliasCommand,
     UnaliasCommand,
 )
-from .alias import expand_aliases, handle_alias_command
+from .alias import expand_aliases
 from .history_mixin import HistoryMixin
 from .file_loader_mixin import FileLoaderMixin
 from .alias_mixin import AliasMixin
@@ -138,7 +135,6 @@ class GenericREPL(HistoryMixin, FileLoaderMixin, AliasMixin):
             AliasCommand(),
             UnaliasCommand(),
         ]
-
 
     def process_line(self, line: str) -> bool:
         """Processes a single line of input. Returns True to continue, False to exit.

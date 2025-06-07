@@ -47,7 +47,7 @@ def handle_alias_command(line: str, aliases: dict) -> bool:
         True if handled, False otherwise.
     """
     if line.startswith(".alias"):
-        parts = line[len(".alias"):].strip()
+        parts = line[len(".alias") :].strip()
         if not parts:
             if not aliases:
                 print("No aliases defined.")
@@ -60,7 +60,9 @@ def handle_alias_command(line: str, aliases: dict) -> bool:
                 return True
             name, expr = map(str.strip, parts.split("=", 1))
             if not name.startswith("@") or not name[1:].isidentifier():
-                print(f"Invalid alias name: '{name}' (must start with '@' and be a valid identifier)")
+                print(
+                    f"Invalid alias name: '{name}' (must start with '@' and be a valid identifier)"
+                )
                 return True
             if not expr:
                 print("Alias expression cannot be empty.")
@@ -71,14 +73,16 @@ def handle_alias_command(line: str, aliases: dict) -> bool:
                 print(f"Alias error in expression: {e}")
                 return True
             if name in aliases:
-                print(f"Alias '{name}' replaced (was: {aliases[name]}) → now: {expr_expanded}")
+                print(
+                    f"Alias '{name}' replaced (was: {aliases[name]}) → now: {expr_expanded}"
+                )
             else:
                 print(f"Alias added: {name} = {expr_expanded}")
             aliases[name] = expr_expanded
         return True
 
     if line.startswith(".unalias"):
-        parts = line[len(".unalias"):].strip()
+        parts = line[len(".unalias") :].strip()
         if parts in aliases:
             del aliases[parts]
             print(f"Alias removed: {parts}")

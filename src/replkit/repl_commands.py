@@ -31,14 +31,16 @@ class ExitCommand(BaseCommand):
         print("Bye!")
         return False
 
-    def describe(self): return ".exit, .quit          Exit the REPL"
+    def describe(self):
+        return ".exit, .quit          Exit the REPL"
 
 
 class HelpCommand(BaseCommand):
     def matches(self, line):
         return line == ".help"
 
-    def describe(self): return ".help                 Show this help message"
+    def describe(self):
+        return ".help                 Show this help message"
 
     def execute(self, line, repl):
         print("REPL meta-commands:")
@@ -60,7 +62,8 @@ class ClearCommand(BaseCommand):
             print(f"Failed to clear screen: {e}")
         return True
 
-    def describe(self): return ".clear                Clear the screen"
+    def describe(self):
+        return ".clear                Clear the screen"
 
 
 class HistoryCommand(BaseCommand):
@@ -71,7 +74,8 @@ class HistoryCommand(BaseCommand):
         repl.print_history()
         return True
 
-    def describe(self): return ".history              Show command history"
+    def describe(self):
+        return ".history              Show command history"
 
 
 class ReloadCommand(BaseCommand):
@@ -85,7 +89,8 @@ class ReloadCommand(BaseCommand):
             print("No file was originally loaded to reload.")
         return True
 
-    def describe(self): return ".reload               Reload the init file"
+    def describe(self):
+        return ".reload               Reload the init file"
 
 
 class LoadCommand(BaseCommand):
@@ -101,7 +106,8 @@ class LoadCommand(BaseCommand):
         repl.load_file(filepath, label=f".load {filepath}")
         return True
 
-    def describe(self): return ".load <file>          Load a batch file"
+    def describe(self):
+        return ".load <file>          Load a batch file"
 
 
 class AliasCommand(BaseCommand):
@@ -130,4 +136,3 @@ class UnaliasCommand(BaseCommand):
 
     def describe(self):
         return ".unalias @name        Remove an alias"
-

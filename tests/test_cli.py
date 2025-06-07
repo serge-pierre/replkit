@@ -72,10 +72,15 @@ def test_cli_alias_file_usage(tmp_path):
     alias_file.write_text(".alias @foo=bar\n")
     result = subprocess.run(
         [
-            "python", "-m", "replkit.generic_repl",
-            "--alias", str(alias_file),
-            "--run", "@foo"
+            "python",
+            "-m",
+            "replkit.generic_repl",
+            "--alias",
+            str(alias_file),
+            "--run",
+            "@foo",
         ],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     assert "bar" in result.stdout

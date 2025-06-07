@@ -2,11 +2,15 @@
 
 import pytest
 from replkit.repl_commands import (
-    ExitCommand, HelpCommand, ClearCommand,
-    HistoryCommand, ReloadCommand, LoadCommand,
-    AliasCommand, UnaliasCommand,
+    ExitCommand,
+    HelpCommand,
+    ClearCommand,
+    HistoryCommand,
+    ReloadCommand,
+    LoadCommand,
+    AliasCommand,
+    UnaliasCommand,
 )
-from replkit.alias import handle_alias_command
 
 
 class DummyREPL:
@@ -138,6 +142,7 @@ def test_unalias_command(capsys):
 def test_clear_command_exception(monkeypatch):
     def fail_clear(cmd):
         raise OSError("fail!")
+
     monkeypatch.setattr("os.system", fail_clear)
     cmd = ClearCommand()
     # Le REPL ne doit pas crasher sur l’exception !
@@ -146,11 +151,19 @@ def test_clear_command_exception(monkeypatch):
     except Exception:
         pytest.fail("ClearCommand should handle exceptions in os.system")
 
+
 def test_command_handlers_extensible():
     class FooCommand:
-        def matches(self, line): return line == ".foo"
-        def execute(self, line, repl): repl.output.append("foo"); return True
-        def describe(self): return ".foo   Custom test command"
+        def matches(self, line):
+            return line == ".foo"
+
+        def execute(self, line, repl):
+            repl.output.append("foo")
+            return True
+
+        def describe(self):
+            return ".foo   Custom test command"
+
     dummy = DummyREPL()
     dummy.command_handlers = [FooCommand()]
     for cmd in dummy.command_handlers:

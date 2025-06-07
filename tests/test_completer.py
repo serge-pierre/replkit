@@ -121,6 +121,7 @@ def test_completer_aliases_suggestions():
     assert "@f" in results
     assert "@g" in results
 
+
 def test_completer_space_behavior():
     interpreter = DummyInterpreter()
     completer = REPLCompleter(interpreter)

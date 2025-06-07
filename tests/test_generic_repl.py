@@ -170,8 +170,12 @@ def test_eof_exit(monkeypatch, capsys):
 
 def test_eval_error_handling(monkeypatch, capsys):
     class FailEval:
-        def eval(self, line): raise RuntimeError("Simulated error")
-        def get_keywords(self): return set()
+        def eval(self, line):
+            raise RuntimeError("Simulated error")
+
+        def get_keywords(self):
+            return set()
+
     inputs = iter(["test", ".exit"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
     repl = GenericREPL(interpreter=FailEval(), prompt="> ", hello_sentence="")
@@ -179,12 +183,19 @@ def test_eval_error_handling(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "Error: Simulated error" in out
 
+
 def test_process_line_unknown_command(monkeypatch):
     # Si aucun handler ne match, l'interpréteur doit recevoir la commande.
     class Recorder:
-        def __init__(self): self.seen = []
-        def eval(self, line): self.seen.append(line)
-        def get_keywords(self): return set()
+        def __init__(self):
+            self.seen = []
+
+        def eval(self, line):
+            self.seen.append(line)
+
+        def get_keywords(self):
+            return set()
+
     repl = GenericREPL(interpreter=Recorder(), prompt="> ", hello_sentence="")
     repl.process_line("inconnu")
     assert "inconnu" in repl.interpreter.seen
