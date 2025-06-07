@@ -67,7 +67,7 @@ Load or persist aliases from/to a file.
 Starting from v2.0.0, core features like alias handling, file loading, and history management are implemented as modular mixins.
 For example, `expand_aliases` and `handle_alias_command` are now provided by the `AliasMixin` and not directly by `GenericREPL`.
 This allows for easier extension, independent testing, and clearer code organization.
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for details.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ---
 
@@ -118,7 +118,7 @@ python generic_repl.py --history ~/.hist --alias ~/.aliases --log repl.log
 ## Extending Meta-Commands
 
 You can add new meta-commands by subclassing `BaseCommand` and adding your handler to the `command_handlers` list of your REPL instance.
-See [interpreter_guide.md](./interpreter_guide.md) for a complete example.
+See [interpreter_guide.md](interpreter_guide.md) for a complete example.
 
 ---
 

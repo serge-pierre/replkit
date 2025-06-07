@@ -152,4 +152,4 @@ tests/
 
 ## Contact
 
-See [README.md](./README.md) for links and further docs.
+See [README.md](../README.md) for links and further docs.

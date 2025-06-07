@@ -73,7 +73,7 @@ python -m replkit.generic_repl --prompt "MyREPL> " --history ~/.myrepl_history
 - **Interpreter**: Pluggable; must expose `.eval(line)` (and optionally `.get_keywords()` for completion).
 - **Tested independently**: Every component comes with its own unit tests.
 
-See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for a detailed breakdown.
+See [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) for a detailed breakdown.
 
 ---
 
@@ -88,10 +88,10 @@ See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for a detailed breakdown.
 
 ## Documentation
 
-- [User guide: `repl.md`](.docs/repl.md)
-- [Interpreter API: `interpreter_guide.md`](.docs/interpreter_guide.md)
-- [Architecture: `ARCHITECTURE.md`](.docs/ARCHITECTURE.md)
-- [Changelog: `CHANGELOG.md`](./CHANGELOG.md)
+- [User guide: `repl.md`](docs/repl.md)
+- [Interpreter API: `interpreter_guide.md`](docs/interpreter_guide.md)
+- [Architecture: `ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [Changelog: `CHANGELOG.md`](CHANGELOG.md)
 
 ---
 

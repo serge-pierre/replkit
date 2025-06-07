@@ -8,7 +8,7 @@ This guide explains how to create, plug, and customize interpreters using the `r
 
 `replkit` is a toolkit to build and run interactive command-line interfaces (REPLs). It allows you to plug in any interpreter that exposes an `eval()` method and optionally a `get_keywords()` method for autocompletion.
 
-For an overview of the internal modular architecture and extensibility, see [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+For an overview of the internal modular architecture and extensibility, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -190,11 +190,11 @@ class TimeitCommand(BaseCommand):
 You can extend the REPL by defining your own meta-commands (such as `.timeit`, `.doc`, etc.).
 Simply subclass `BaseCommand`, implement `matches()` and `execute()`, and add your handler to `command_handlers`.
 
-See [my_repl.md](./my_repl.md) for the base REPL architecture and more advanced usage examples.
+See [my_repl.md](repl.md) for the base REPL architecture and more advanced usage examples.
 
 ---
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for more on adding features and testing.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for more on adding features and testing.
 
 ---
 
