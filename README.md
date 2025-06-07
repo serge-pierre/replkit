@@ -1,217 +1,109 @@
+![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+[![License](https://img.shields.io/github/license/serge-pierre/replkit)](./LICENSE)
+
 # replkit
 
-`replkit` is a reusable and extensible REPL engine for building custom interactive command-line environments in Python.
-
-It supports interpreter injection, command history, auto-completion, script execution, aliasing, and batch command loading.
+A modular, extensible, interpreter-agnostic REPL toolkit for Python.
 
 ---
 
 ## Features
 
-- Interactive REPL loop with prompt and welcome message
-- Pluggable interpreter (user-defined `eval()` and `get_keywords()`)
-- Persistent history (`readline`-based)
-- History recall via `!N`
-- Alias system:
-  - Define aliases using `.alias @name = expression`
-  - Expand aliases before evaluation
-  - Remove with `.unalias @name`
-  - Tab completion support for alias names
-  - Aliases are stored/restored across sessions
-- Meta-commands:
-  - `.exit`, `.quit` — Exit the REPL
-  - `.help` — Show built-in REPL commands
-  - `.history` — Show command history
-  - `.clear` — Clear the screen
-  - `.reload` — Re-execute the `--file` passed at startup
-  - `.load <file>` — Load and run commands from a file
-  - `.alias [@name = expr]` — List aliases or define new alias
-  - `.unalias @name` — Delete alias @name
-- Batch file support:
-  - `--file` for preloading commands at startup
-  - `--run` to inject a one-line command
-  - Lines starting with `#` and empty lines are ignored
-- Tab completion for interpreter keywords, meta-commands, aliases, and history
-- Logging support via `--log` and `--loglevel`
+- Interactive REPL engine with command history (readline)
+- Pluggable interpreter (just provide `.eval()`, `.get_keywords()` optional)
+- Extensible meta-command system (`.exit`, `.help`, `.alias`, etc.)
+- Alias system with file persistence and tab-completion
+- History and aliases saved between sessions
+- Easy script file loading/init support
+- Complete test suite, robust codebase, ready for extension
 
 ---
 
 ## Installation
 
-### Production usage
-
 ```bash
 pip install git+https://github.com/serge-pierre/replkit.git
 ```
 
-Or clone manually:
-
-```bash
-git clone https://github.com/serge-pierre/replkit.git
-cd replkit
-python -m venv venv
-source venv/bin/activate
-pip install .
-```
-
-Then run:
-
-```bash
-python -m replkit.generic_repl
-```
-
 ---
 
-### Development setup
+## Quick Start
 
-```bash
-git clone https://github.com/serge-pierre/replkit.git
-cd replkit
-python -m venv venv
-source venv/bin/activate
-pip install --upgrade pip setuptools
-pip install -e .[dev]
-```
-
-### Run the tests
-
-```bash
-pytest
-```
-
-### Format, lint, type-check and other command
-
-(Check the Makefile for details)
-
-```bash
-make install
-make format
-make lint
-make test
-make clean
-```
-
----
-
-## Usage
-
-### Basic example with default interpreter
-
-```bash
-python -m replkit.generic_repl --prompt ">>> " --hello "Welcome!" --log repl.log
-```
-
-### With an injected interpreter
-
-Create a Python script, e.g. `math_repl.py`:
+Minimal REPL with your own interpreter:
 
 ```python
 from replkit import repl
 
-class MathInterpreter:
+class MyInterpreter:
     def eval(self, line):
-        try:
-            result = eval(line)
-            print(result)
-        except Exception as e:
-            print(f"Error: {e}")
-
+        print(f"Eval: {line}")
     def get_keywords(self):
-        return {"+", "-", "*", "/", "(", ")"}
+        return {"print", "run", "exit"}
 
-if __name__ == "__main__":
-    repl(interpreter=MathInterpreter(), argv=[
-        "--prompt", "Math> ",
-        "--hello", "Welcome in MathInterpreter!",
-        "--file", "init.txt",
-        "--alias", "aliases.txt"
-    ])
+repl(MyInterpreter())
 ```
 
-Then run:
+---
+
+## CLI usage
 
 ```bash
-python math_repl.py
+python -m replkit.generic_repl --prompt "MyREPL> " --history ~/.myrepl_history
 ```
+
+| Option       | Description                           |
+| ------------ | ------------------------------------- |
+| `--history`  | Path to history file                  |
+| `--alias`    | Alias file (`.alias ...`)             |
+| `--log`      | Path to log file                      |
+| `--loglevel` | Logging level (DEBUG, INFO, etc.)     |
+| `--hello`    | Welcome message                       |
+| `--prompt`   | Prompt text                           |
+| `--run`      | Command to execute before REPL starts |
+| `--file`     | File to execute at startup            |
 
 ---
 
-## File-based command injection
+## Architecture Overview
 
-You can create an init file like `init.txt`:
+- **GenericREPL**: Main controller, composes mixins for modularity.
+- **Mixins**: Each core feature (history, aliases, file loading) is isolated in a dedicated mixin for clarity and reusability.
+- **Meta-Commands**: Strategy objects; add or override by subclassing `BaseCommand`.
+- **REPLCompleter**: Autocompletion for keywords, meta-commands, aliases, history.
+- **Interpreter**: Pluggable; must expose `.eval(line)` (and optionally `.get_keywords()` for completion).
+- **Tested independently**: Every component comes with its own unit tests.
 
-```txt
-# Initialize the session
-1 + 2
-(5 * 4) / 2
-
-# This line is ignored:
-# print("Hello")
-```
-
-And load it with:
-
-```bash
-python -m replkit.generic_repl --file init.txt
-```
-
-Or in an active REPL session:
-
-```txt
-Math> .load load.txt
-Math> .reload
-```
+See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for a detailed breakdown.
 
 ---
 
-## Alias examples
+## How to Extend
 
-```txt
-.alias @dbl = dup +
-.alias @square = @dbl *
-
-@dbl 4      # Expands to: (dup +) 4
-@square 2   # Expands to: ((dup +) *) 2
-.unalias @square
-```
+- **Add meta-commands**: See `repl_commands.py` and subclass `BaseCommand`.
+- **Add new mixins/features**: Implement a mixin class and compose into `GenericREPL`.
+- **Write a new interpreter**: Just implement `.eval(line)` and (optionally) `.get_keywords()`.
+- **Test your extensions**: Add a new test module, mock as needed.
 
 ---
 
-## Meta-commands reference
+## Documentation
 
-| Command           | Description                                 |
-| ----------------- | ------------------------------------------- |
-| `.exit` / `.quit` | Exit the REPL                               |
-| `.help`           | Show list of REPL meta-commands             |
-| `.history`        | Show previously entered commands            |
-| `.clear`          | Clear the terminal screen                   |
-| `.reload`         | Reload the file passed via `--file`         |
-| `.load <file>`    | Load and execute commands from another file |
-| `.alias`          | Show or define aliases                      |
-| `.unalias @name`  | Remove a defined alias                      |
-| `!N`              | Recall the N-th command in history          |
+- [User guide: `repl.md`](.docs/repl.md)
+- [Interpreter API: `interpreter_guide.md`](.docs/interpreter_guide.md)
+- [Architecture: `ARCHITECTURE.md`](.docs/ARCHITECTURE.md)
+- [Changelog: `CHANGELOG.md`](./CHANGELOG.md)
 
 ---
 
-## Example projects
+## Contributing
 
-- `math_repl.py` – A math evaluator using Python `eval()`
-- `calc_boolean_repl.py` – A boolean calculator REPL (see [docs/interpreter_guide.md](docs/interpreter_guide.md))
-- `json_query_repl.py` – Query JSON using a mini DSL
-
----
-
-## Roadmap ideas
-
-- Support for multi-line command blocks
-- Optional typed variables or scoped contexts
-- Plug-in support for interpreters via entry-points
+PRs and bug reports are welcome! Please add tests for any new feature or bugfix.
 
 ---
 
 ## License
 
-MIT License
+MIT
 
 © 2025–present Serge Pierre
 
@@ -221,9 +113,3 @@ MIT License
 
 Serge Pierre  
 [https://github.com/serge-pierre](https://github.com/serge-pierre)
-
----
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for release notes.

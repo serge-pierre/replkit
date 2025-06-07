@@ -4,13 +4,15 @@ This guide explains how to create, plug, and customize interpreters using the `r
 
 ---
 
-## ✨ Introduction
+## Introduction
 
 `replkit` is a toolkit to build and run interactive command-line interfaces (REPLs). It allows you to plug in any interpreter that exposes an `eval()` method and optionally a `get_keywords()` method for autocompletion.
 
+For an overview of the internal modular architecture and extensibility, see [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+
 ---
 
-## 🚀 Getting Started: A Minimal Python Interpreter
+## Getting Started: A Minimal Python Interpreter
 
 Here's the simplest custom interpreter compatible with `replkit`:
 
@@ -36,7 +38,18 @@ $ python my_interpreter.py
 
 ---
 
-## ✅ Full Example: Boolean Expression Evaluator
+## Writing an Interpreter
+
+Your interpreter class must provide at least:
+
+- `eval(line: str)`: called for any input that is not a meta-command.
+- Optionally, `get_keywords() -> set[str]`: used for tab-completion.
+
+You may ignore all REPL and CLI logic; `replkit` handles the REPL workflow for you.
+
+---
+
+## Full Example: Boolean Expression Evaluator
 
 ### File: `calc_boolean_repl.py`
 
@@ -104,7 +117,7 @@ The files repl.log and repl_history will be at their default place : the user ho
 
 ---
 
-## ⚙️ Command-Line Options
+## Command-Line Options
 
 `replkit` exposes several options via `argv`:
 
@@ -120,7 +133,7 @@ The files repl.log and repl_history will be at their default place : the user ho
 
 ---
 
-## 🧠 Best Practices
+## Best Practices
 
 - Keep interpreter logic decoupled from REPL logic.
 - Always implement `eval(line: str)`.
@@ -129,7 +142,7 @@ The files repl.log and repl_history will be at their default place : the user ho
 
 ---
 
-## 🚫 Note on External Language Support
+## Note on External Language Support
 
 While `replkit` is technically capable of driving interpreters from other languages (via subprocess or protocol bridges), robust and persistent integration with non-Python interpreters (such as Guile, Node.js, etc.) introduces complexity that is not yet fully resolved.
 
@@ -139,11 +152,49 @@ Future versions of this guide may reintroduce advanced external interpreter inte
 
 ---
 
-## 📄 Resources
+## Resources
 
 - GitHub: [https://github.com/serge-pierre/replkit](https://github.com/serge-pierre/replkit)
 - PyPI Package: [replkit](https://pypi.org/project/replkit/) -- Not published for the moment
 - Docstring & help: `python -m replkit --help`
+
+---
+
+## Extending REPL Functionality
+
+You can add custom meta-commands by subclassing `BaseCommand` and registering your command handler in the `command_handlers` list of your REPL instance.
+
+Example:
+
+```python
+from replkit.repl_commands import BaseCommand
+
+class TimeitCommand(BaseCommand):
+    def matches(self, line):
+        return line.startswith(".timeit ")
+
+    def execute(self, line, repl):
+        import time
+        code = line[len(".timeit "):]
+        start = time.time()
+        repl.interpreter.eval(code)
+        elapsed = time.time() - start
+        print(f"Execution took {elapsed:.3f} seconds")
+        return True
+```
+
+---
+
+## Advanced: Extending REPL Meta-Commands
+
+You can extend the REPL by defining your own meta-commands (such as `.timeit`, `.doc`, etc.).
+Simply subclass `BaseCommand`, implement `matches()` and `execute()`, and add your handler to `command_handlers`.
+
+See [my_repl.md](./my_repl.md) for the base REPL architecture and more advanced usage examples.
+
+---
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for more on adding features and testing.
 
 ---
 
