@@ -40,9 +40,13 @@ Starts the interactive REPL loop.
 
 Expands aliases in the input line (e.g., `@foo` becomes its full expression). Raises a `ValueError` if an alias is undefined.
 
+Note: This method is now implemented as mixins (e.g. `AliasMixin`) and may not appear directly on `GenericREPL`. Access it via the composed REPL instance.
+
 ### `handle_alias_command(line)`
 
 Handles `.alias`, `.unalias`, and their display. Returns `True` if it was a recognized meta-command, `False` otherwise.
+
+Note: This method is now implemented as mixins (e.g. `AliasMixin`) and may not appear directly on `GenericREPL`. Access it via the composed REPL instance.
 
 ### `load_file(path, label=None, show_errors=True)`
 
@@ -55,6 +59,15 @@ Manage the command history using `readline`.
 ### `load_aliases_file(path)`, `save_aliases_file(path)`
 
 Load or persist aliases from/to a file.
+
+---
+
+## Modular Architecture Note
+
+Starting from v2.0.0, core features like alias handling, file loading, and history management are implemented as modular mixins.
+For example, `expand_aliases` and `handle_alias_command` are now provided by the `AliasMixin` and not directly by `GenericREPL`.
+This allows for easier extension, independent testing, and clearer code organization.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for details.
 
 ---
 
@@ -99,6 +112,13 @@ python generic_repl.py --history ~/.hist --alias ~/.aliases --log repl.log
 - Safety: only valid names accepted, clear error handling
 - Tab completion supported
 - Alias definitions persist via `.alias` file
+
+---
+
+## Extending Meta-Commands
+
+You can add new meta-commands by subclassing `BaseCommand` and adding your handler to the `command_handlers` list of your REPL instance.
+See [interpreter_guide.md](./interpreter_guide.md) for a complete example.
 
 ---
 

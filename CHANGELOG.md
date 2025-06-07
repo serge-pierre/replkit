@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [v2.0.0] - 2025-06-07
+
+### Added
+
+- Modular architecture using mixins: `HistoryMixin`, `FileLoaderMixin`, `AliasMixin`
+- Meta-commands now implemented as extensible strategy objects (subclass `BaseCommand`)
+- Alias system: persistent, validated, with tab completion, listing, and removal
+- Flexible CLI: history, alias, log, prompt, hello sentence, interpreter, file, and run command
+- Full unit and integration test suite for each component and feature
+- Documentation: user guide, interpreter API, architecture overview
+
+### Changed
+
+- Refactored core into separate, focused modules for maintainability
+- Test coverage increased and simplified
+- Error handling improved across all file, alias, and command operations
+- CLI and REPL logic now completely decoupled from the interpreter
+
+### Fixed
+
+- Robust file I/O, cross-platform compatibility (history, clear screen, paths)
+- Consistent alias expansion, handling of edge cases and user errors
+
+---
+
 ## [1.0.0] – 2025-06-06
 
 ### Added
@@ -47,6 +72,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `GenericREPL` cleaned and documented: inline comments clarified for core REPL logic
 - Alias handling centralized and unit-tested (`expand_aliases`, `handle_alias_command`)
 - Finalized and documented `add_history_once()` method to protect REPL history integrity
+
+---
 
 ## [0.2.0] – 2025-06-01
 
