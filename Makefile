@@ -10,7 +10,7 @@ install:
 	$(PIP) install -e .[dev]
 
 test:
-	$(PYTHON) -m pytest
+	$(PYTHON) -m pytest -v
 
 lint:
 	$(PYTHON) -m ruff check src/replkit tests
